@@ -1,5 +1,17 @@
 # @backstage/backend-common
 
+## 0.8.10
+
+### Patch Changes
+
+- 8543d9890: Add an optional `info` parameter to the `readTree` filter option with a `size` property.
+- 9b4604b38: Add support for watching configuration by implementing the `subscribe` method in the configuration returned by `loadBackendConfig`.
+- b8cb12009: Add AWS S3 URL Reader
+- Updated dependencies
+  - @backstage/config@0.1.7
+  - @backstage/config-loader@0.6.7
+  - @backstage/integration@0.6.1
+
 ## 0.8.9
 
 ### Patch Changes

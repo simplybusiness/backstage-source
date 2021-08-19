@@ -1,5 +1,21 @@
 # @backstage/plugin-catalog-backend
 
+## 0.13.3
+
+### Patch Changes
+
+- 61aa6526f: Avoid duplicate work by comparing previous processing rounds with the next
+- fe960ad0f: Updates the `DefaultProcessingDatabase` to accept a refresh interval function instead of a fixed refresh interval in seconds which used to default to 100s. The catalog now ships with a default refresh interval function that schedules entities for refresh every 100-150 seconds, this should
+  help to smooth out bursts that occur when a lot of entities are scheduled for refresh at the same second.
+
+  Custom `RefreshIntervalFunction` can be implemented and passed to the CatalogBuilder using `.setInterval(fn)`
+
+- 03bb05af6: Enabled live reload of locations configured in `catalog.locations`.
+- Updated dependencies
+  - @backstage/backend-common@0.8.10
+  - @backstage/config@0.1.7
+  - @backstage/integration@0.6.1
+
 ## 0.13.2
 
 ### Patch Changes
