@@ -14,4 +14,5 @@
  * limitations under the License.
  */
 export { DefaultTechDocsCollator } from './DefaultTechDocsCollator';
-export type { TechDocsDocument } from './DefaultTechDocsCollator';
+
+export type { TechDocsCollatorOptions } from './DefaultTechDocsCollator';

@@ -14,4 +14,11 @@
  * limitations under the License.
  */
 
+/**
+ * A module for the search backend that implements search using ElasticSearch
+ *
+ * @packageDocumentation
+ */
+
 export { ElasticSearchSearchEngine } from './engines';
+export type { ElasticSearchClientOptions } from './engines';

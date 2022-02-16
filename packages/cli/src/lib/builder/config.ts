@@ -16,7 +16,7 @@
 
 import chalk from 'chalk';
 import fs from 'fs-extra';
-import { relative as relativePath } from 'path';
+import { relative as relativePath, resolve as resolvePath } from 'path';
 import peerDepsExternal from 'rollup-plugin-peer-deps-external';
 import commonjs from '@rollup/plugin-commonjs';
 import resolve from '@rollup/plugin-node-resolve';
@@ -26,17 +26,30 @@ import svgr from '@svgr/rollup';
 import dts from 'rollup-plugin-dts';
 import json from '@rollup/plugin-json';
 import yaml from '@rollup/plugin-yaml';
-import { RollupOptions, OutputOptions } from 'rollup';
+import { RollupOptions, OutputOptions, RollupWarning } from 'rollup';
 
 import { forwardFileImports } from './plugins';
 import { BuildOptions, Output } from './types';
 import { paths } from '../paths';
 import { svgrTemplate } from '../svgrTemplate';
 
-export const makeConfigs = async (
+export async function makeRollupConfigs(
   options: BuildOptions,
-): Promise<RollupOptions[]> => {
+): Promise<RollupOptions[]> {
   const configs = new Array<RollupOptions>();
+  const targetDir = options.targetDir ?? paths.targetDir;
+  const onwarn = ({ code, message }: RollupWarning) => {
+    if (code === 'EMPTY_BUNDLE') {
+      return; // We don't care about this one
+    }
+    if (options.logPrefix) {
+      console.log(options.logPrefix + message);
+    } else {
+      console.log(message);
+    }
+  };
+
+  const distDir = resolvePath(targetDir, 'dist');
 
   if (options.outputs.has(Output.cjs) || options.outputs.has(Output.esm)) {
     const output = new Array<OutputOptions>();
@@ -44,7 +57,7 @@ export const makeConfigs = async (
 
     if (options.outputs.has(Output.cjs)) {
       output.push({
-        dir: 'dist',
+        dir: distDir,
         entryFileNames: 'index.cjs.js',
         chunkFileNames: 'cjs/[name]-[hash].cjs.js',
         format: 'commonjs',
@@ -53,7 +66,7 @@ export const makeConfigs = async (
     }
     if (options.outputs.has(Output.esm)) {
       output.push({
-        dir: 'dist',
+        dir: distDir,
         entryFileNames: 'index.esm.js',
         chunkFileNames: 'esm/[name]-[hash].esm.js',
         format: 'module',
@@ -64,12 +77,14 @@ export const makeConfigs = async (
     }
 
     configs.push({
-      input: 'src/index.ts',
+      input: resolvePath(targetDir, 'src/index.ts'),
       output,
+      onwarn,
       preserveEntrySignatures: 'strict',
       external: require('module').builtinModules,
       plugins: [
         peerDepsExternal({
+          packageJsonPath: resolvePath(targetDir, 'package.json'),
           includeDependencies: true,
         }),
         resolve({ mainFields }),
@@ -80,7 +95,17 @@ export const makeConfigs = async (
         postcss(),
         forwardFileImports({
           exclude: /\.icon\.svg$/,
-          include: [/\.svg$/, /\.png$/, /\.gif$/, /\.jpg$/, /\.jpeg$/],
+          include: [
+            /\.svg$/,
+            /\.png$/,
+            /\.gif$/,
+            /\.jpg$/,
+            /\.jpeg$/,
+            /\.eot$/,
+            /\.woff$/,
+            /\.woff2$/,
+            /\.ttf$/,
+          ],
         }),
         json(),
         yaml(),
@@ -90,21 +115,22 @@ export const makeConfigs = async (
         }),
         esbuild({
           target: 'es2019',
+          minify: options.minify,
         }),
       ],
     });
   }
 
-  if (options.outputs.has(Output.types)) {
+  if (options.outputs.has(Output.types) && !options.useApiExtractor) {
     const typesInput = paths.resolveTargetRoot(
       'dist-types',
-      relativePath(paths.targetRoot, paths.targetDir),
+      relativePath(paths.targetRoot, targetDir),
       'src/index.d.ts',
     );
 
     const declarationsExist = await fs.pathExists(typesInput);
     if (!declarationsExist) {
-      const path = relativePath(paths.targetDir, typesInput);
+      const path = relativePath(targetDir, typesInput);
       throw new Error(
         `No declaration files found at ${path}, be sure to run ${chalk.bgRed.white(
           'yarn tsc',
@@ -115,12 +141,13 @@ export const makeConfigs = async (
     configs.push({
       input: typesInput,
       output: {
-        file: 'dist/index.d.ts',
+        file: resolvePath(distDir, 'index.d.ts'),
         format: 'es',
       },
+      onwarn,
       plugins: [dts()],
     });
   }
 
   return configs;
-};
+}

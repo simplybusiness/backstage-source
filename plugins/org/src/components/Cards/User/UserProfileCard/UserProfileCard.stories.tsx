@@ -15,7 +15,7 @@
  */
 
 import { UserEntity } from '@backstage/catalog-model';
-import { EntityContext } from '@backstage/plugin-catalog-react';
+import { EntityProvider } from '@backstage/plugin-catalog-react';
 import { Grid } from '@material-ui/core';
 import React from 'react';
 import { MemoryRouter } from 'react-router';
@@ -40,6 +40,7 @@ const defaultEntity: UserEntity = {
   kind: 'User',
   metadata: {
     name: 'guest',
+    description: 'Description for guest',
   },
   spec: {
     profile: {
@@ -55,13 +56,13 @@ const defaultEntity: UserEntity = {
 
 export const Default = () => (
   <MemoryRouter>
-    <EntityContext.Provider value={{ entity: defaultEntity, loading: false }}>
+    <EntityProvider entity={defaultEntity}>
       <Grid container spacing={4}>
         <Grid item xs={12} md={4}>
           <UserProfileCard variant="gridItem" />
         </Grid>
       </Grid>
-    </EntityContext.Provider>
+    </EntityProvider>
   </MemoryRouter>
 );
 
@@ -70,6 +71,7 @@ const noImageEntity: UserEntity = {
   kind: 'User',
   metadata: {
     name: 'guest',
+    description: 'Description for guest',
   },
   spec: {
     profile: {
@@ -83,12 +85,12 @@ const noImageEntity: UserEntity = {
 
 export const NoImage = () => (
   <MemoryRouter>
-    <EntityContext.Provider value={{ entity: noImageEntity, loading: false }}>
+    <EntityProvider entity={noImageEntity}>
       <Grid container spacing={4}>
         <Grid item xs={12} md={4}>
           <UserProfileCard variant="gridItem" />
         </Grid>
       </Grid>
-    </EntityContext.Provider>
+    </EntityProvider>
   </MemoryRouter>
 );

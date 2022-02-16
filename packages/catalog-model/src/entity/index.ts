@@ -17,10 +17,14 @@
 export {
   EDIT_URL_ANNOTATION,
   ENTITY_DEFAULT_NAMESPACE,
+  DEFAULT_NAMESPACE,
   ENTITY_META_GENERATED_FIELDS,
   VIEW_URL_ANNOTATION,
+  ANNOTATION_EDIT_URL,
+  ANNOTATION_VIEW_URL,
 } from './constants';
 export type {
+  AlphaEntity,
   Entity,
   EntityLink,
   EntityMeta,
@@ -29,9 +33,9 @@ export type {
 } from './Entity';
 export type { EntityEnvelope } from './EntityEnvelope';
 export type {
-  UNSTABLE_EntityStatus,
-  UNSTABLE_EntityStatusItem,
-  UNSTABLE_EntityStatusLevel,
+  EntityStatus,
+  EntityStatusItem,
+  EntityStatusLevel,
 } from './EntityStatus';
 export * from './policies';
 export {
@@ -39,9 +43,9 @@ export {
   getEntityName,
   parseEntityName,
   parseEntityRef,
-  serializeEntityRef,
   stringifyEntityRef,
 } from './ref';
+export type { EntityRefContext } from './ref';
 export {
   entityHasChanges,
   generateEntityEtag,

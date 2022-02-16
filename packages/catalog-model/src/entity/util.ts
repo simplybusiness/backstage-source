@@ -16,12 +16,14 @@
 
 import lodash from 'lodash';
 import { v4 as uuidv4 } from 'uuid';
-import { Entity } from './Entity';
+import { Entity, AlphaEntity } from './Entity';
 
 /**
  * Generates a new random UID for an entity.
  *
+ * @public
  * @returns A string with enough randomness to uniquely identify an entity
+ * @deprecated use `uuidv4()` instead.
  */
 export function generateEntityUid(): string {
   return uuidv4();
@@ -30,8 +32,10 @@ export function generateEntityUid(): string {
 /**
  * Generates a new random Etag for an entity.
  *
+ * @public
  * @returns A string with enough randomness to uniquely identify an entity
  *          revision
+ * @deprecated will be removed in a future release.
  */
 export function generateEntityEtag(): string {
   return Buffer.from(uuidv4(), 'utf8').toString('base64').replace(/[^\w]/g, '');
@@ -41,6 +45,8 @@ export function generateEntityEtag(): string {
  * Checks whether there are any significant changes going from the previous to
  * the next version of this entity.
  *
+ * @remarks
+ *
  * Significance, in this case, means that we do not compare generated fields
  * such as uid, etag and generation.
  *
@@ -48,8 +54,10 @@ export function generateEntityEtag(): string {
  * account. It only compares the actual input entity data, i.e. metadata and
  * spec.
  *
- * @param previous The old state of the entity
- * @param next The new state of the entity
+ * @public
+ * @param previous - The old state of the entity
+ * @param next - The new state of the entity
+ * @deprecated will be removed in a future release.
  */
 export function entityHasChanges(previous: Entity, next: Entity): boolean {
   const e1 = lodash.cloneDeep(previous);
@@ -84,9 +92,9 @@ export function entityHasChanges(previous: Entity, next: Entity): boolean {
 
   // Remove things that we explicitly do not compare
   delete e1.relations;
-  delete e1.status;
+  delete (e1 as AlphaEntity).status;
   delete e2.relations;
-  delete e2.status;
+  delete (e2 as AlphaEntity).status;
 
   return !lodash.isEqual(e1, e2);
 }
@@ -95,12 +103,16 @@ export function entityHasChanges(previous: Entity, next: Entity): boolean {
  * Takes an old revision of an entity and a new desired state, and merges
  * them into a complete new state.
  *
+ * @remarks
+ *
  * The previous revision is expected to be a complete model loaded from the
  * catalog, including the uid, etag and generation fields.
  *
- * @param previous The old state of the entity
- * @param next The new state of the entity
+ * @public
+ * @param previous - The old state of the entity
+ * @param next - The new state of the entity
  * @returns An entity with the merged state of both
+ * @deprecated will be removed in a future release.
  */
 export function generateUpdatedEntity(previous: Entity, next: Entity): Entity {
   const { uid, etag, generation } = previous.metadata;

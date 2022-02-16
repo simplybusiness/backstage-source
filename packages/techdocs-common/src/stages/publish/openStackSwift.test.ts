@@ -18,7 +18,7 @@ import { getVoidLogger } from '@backstage/backend-common';
 import {
   Entity,
   EntityName,
-  ENTITY_DEFAULT_NAMESPACE,
+  DEFAULT_NAMESPACE,
 } from '@backstage/catalog-model';
 import { ConfigReader } from '@backstage/config';
 import express from 'express';
@@ -29,7 +29,7 @@ import path from 'path';
 import { OpenStackSwiftPublish } from './openStackSwift';
 import { PublisherBase, TechDocsMetadata } from './types';
 
-// NOTE: /packages/techdocs-common/__mocks__ is being used to mock pkgcloud client library
+// NOTE: /packages/techdocs-common/__mocks__ is being used to mock @trendyol-js/openstack-swift-sdk client library
 
 const createMockEntity = (annotations = {}): Entity => {
   return {
@@ -59,7 +59,21 @@ const getEntityRootDir = (entity: Entity) => {
     metadata: { namespace, name },
   } = entity;
 
-  return path.join(rootDir, namespace || ENTITY_DEFAULT_NAMESPACE, kind, name);
+  return path.join(rootDir, namespace || DEFAULT_NAMESPACE, kind, name);
+};
+
+const getPosixEntityRootDir = (entity: Entity) => {
+  const {
+    kind,
+    metadata: { namespace, name },
+  } = entity;
+
+  return path.posix.join(
+    '/rootDir',
+    namespace || DEFAULT_NAMESPACE,
+    kind,
+    name,
+  );
 };
 
 const logger = getVoidLogger();
@@ -70,16 +84,16 @@ beforeEach(() => {
   mockFs.restore();
   const mockConfig = new ConfigReader({
     techdocs: {
-      requestUrl: 'http://localhost:7000',
+      requestUrl: 'http://localhost:7007',
       publisher: {
         type: 'openStackSwift',
         openStackSwift: {
           credentials: {
-            username: 'mockuser',
-            password: 'verystrongpass',
+            id: 'mockid',
+            secret: 'verystrongsecret',
           },
           authUrl: 'mockauthurl',
-          region: 'mockregion',
+          swiftUrl: 'mockSwiftUrl',
           containerName: 'mock',
         },
       },
@@ -100,16 +114,16 @@ describe('OpenStackSwiftPublish', () => {
     it('should reject incorrect config', async () => {
       const mockConfig = new ConfigReader({
         techdocs: {
-          requestUrl: 'http://localhost:7000',
+          requestUrl: 'http://localhost:7007',
           publisher: {
             type: 'openStackSwift',
             openStackSwift: {
               credentials: {
-                username: 'mockuser',
-                password: 'verystrongpass',
+                id: 'mockId',
+                secret: 'mockSecret',
               },
               authUrl: 'mockauthurl',
-              region: 'mockregion',
+              swiftUrl: 'mockSwiftUrl',
               containerName: 'errorBucket',
             },
           },
@@ -156,7 +170,13 @@ describe('OpenStackSwiftPublish', () => {
           entity,
           directory: entityRootDir,
         }),
-      ).toBeUndefined();
+      ).toMatchObject({
+        objects: expect.arrayContaining([
+          'test-namespace/TestKind/test-component-name/404.html',
+          `test-namespace/TestKind/test-component-name/index.html`,
+          `test-namespace/TestKind/test-component-name/assets/main.css`,
+        ]),
+      });
     });
 
     it('should fail to publish a directory', async () => {
@@ -227,7 +247,7 @@ describe('OpenStackSwiftPublish', () => {
       mockFs({
         [entityRootDir]: {
           'techdocs_metadata.json':
-            '{"site_name": "backstage", "site_description": "site_content", "etag": "etag"}',
+            '{"site_name": "backstage", "site_description": "site_content", "etag": "etag", "build_timestamp": 612741599}',
         },
       });
 
@@ -235,6 +255,7 @@ describe('OpenStackSwiftPublish', () => {
         site_name: 'backstage',
         site_description: 'site_content',
         etag: 'etag',
+        build_timestamp: 612741599,
       };
       expect(
         await publisher.fetchTechDocsMetadata(entityNameMock),
@@ -249,7 +270,7 @@ describe('OpenStackSwiftPublish', () => {
 
       mockFs({
         [entityRootDir]: {
-          'techdocs_metadata.json': `{'site_name': 'backstage', 'site_description': 'site_content', 'etag': 'etag'}`,
+          'techdocs_metadata.json': `{'site_name': 'backstage', 'site_description': 'site_content', 'etag': 'etag', 'build_timestamp': 612741599}`,
         },
       });
 
@@ -257,6 +278,7 @@ describe('OpenStackSwiftPublish', () => {
         site_name: 'backstage',
         site_description: 'site_content',
         etag: 'etag',
+        build_timestamp: 612741599,
       };
       expect(
         await publisher.fetchTechDocsMetadata(entityNameMock),
@@ -267,12 +289,12 @@ describe('OpenStackSwiftPublish', () => {
     it('should return an error if the techdocs_metadata.json file is not present', async () => {
       const entityNameMock = createMockEntityName();
       const entity = createMockEntity();
-      const entityRootDir = getEntityRootDir(entity);
+      const entityRootDir = getPosixEntityRootDir(entity);
 
       const fails = publisher.fetchTechDocsMetadata(entityNameMock);
 
       await expect(fails).rejects.toMatchObject({
-        message: `TechDocs metadata fetch failed, The file ${path.join(
+        message: `TechDocs metadata fetch failed, The file ${path.posix.join(
           entityRootDir,
           'techdocs_metadata.json',
         )} does not exist !`,
@@ -349,6 +371,22 @@ describe('OpenStackSwiftPublish', () => {
       expect(svgResponse.header).toMatchObject({
         'content-type': 'text/plain; charset=utf-8',
       });
+    });
+
+    it('should return 404 if file is not found', async () => {
+      const {
+        kind,
+        metadata: { namespace, name },
+      } = entity;
+
+      const response = await request(app).get(
+        `/${namespace}/${kind}/${name}/not-found.html`,
+      );
+      expect(response.status).toBe(404);
+
+      expect(Buffer.from(response.text).toString('utf8')).toEqual(
+        'File Not Found',
+      );
     });
   });
 });

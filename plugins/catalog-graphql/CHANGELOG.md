@@ -1,5 +1,57 @@
 # @backstage/plugin-catalog-graphql
 
+## 0.3.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/config@0.1.13
+  - @backstage/catalog-model@0.9.10
+
+## 0.3.1-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/config@0.1.13-next.0
+  - @backstage/catalog-model@0.9.10-next.0
+
+## 0.3.0
+
+### Minor Changes
+
+- 0fb17da164: chore: bumping dependencies in the GraphQL modules and bringing them up to date with the latest `graphql-modules` library
+
+### Patch Changes
+
+- cf01627a33: Bump graphql versions
+- Updated dependencies
+  - @backstage/config@0.1.12
+  - @backstage/catalog-model@0.9.9
+
+## 0.2.14
+
+### Patch Changes
+
+- 6b500622d5: Move to using node-fetch internally instead of cross-fetch
+
+## 0.2.13
+
+### Patch Changes
+
+- 10615525f3: Switch to use the json and observable types from `@backstage/types`
+- Updated dependencies
+  - @backstage/config@0.1.11
+  - @backstage/catalog-model@0.9.6
+
+## 0.2.12
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-common@0.9.0
+  - @backstage/config@0.1.8
+
 ## 0.2.11
 
 ### Patch Changes

@@ -15,20 +15,29 @@
  */
 
 import { EntityName } from '@backstage/catalog-model';
-import { PartialEntity } from '../types';
 import { createApiRef } from '@backstage/core-plugin-api';
+import { PartialEntity } from '../types';
 
+/**
+ * Utility API reference for the {@link CatalogImportApi}.
+ *
+ * @public
+ */
 export const catalogImportApiRef = createApiRef<CatalogImportApi>({
   id: 'plugin.catalog-import.service',
-  description: 'Used by the catalog import plugin to make requests',
 });
 
-// result of the analyze state
+/**
+ * Result of the analysis.
+ *
+ * @public
+ */
 export type AnalyzeResult =
   | {
       type: 'locations';
       locations: Array<{
         target: string;
+        exists?: boolean;
         entities: EntityName[];
       }>;
     }
@@ -39,8 +48,18 @@ export type AnalyzeResult =
       generatedEntities: PartialEntity[];
     };
 
+/**
+ * API for driving catalog imports.
+ *
+ * @public
+ */
 export interface CatalogImportApi {
   analyzeUrl(url: string): Promise<AnalyzeResult>;
+
+  preparePullRequest?(): Promise<{
+    title: string;
+    body: string;
+  }>;
 
   submitPullRequest(options: {
     repositoryUrl: string;

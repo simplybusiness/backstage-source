@@ -1,5 +1,336 @@
 # @backstage/techdocs-common
 
+## 0.11.7
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-common@0.10.7
+
+## 0.11.7-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-common@0.10.7-next.0
+
+## 0.11.6
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-common@0.10.6
+
+## 0.11.6-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-common@0.10.6-next.0
+
+## 0.11.5
+
+### Patch Changes
+
+- ff93fbeeec: Fix interpolated string for "Failed to generate docs from ..."
+- Updated dependencies
+  - @backstage/search-common@0.2.2
+  - @backstage/backend-common@0.10.5
+
+## 0.11.4
+
+### Patch Changes
+
+- 47277c0d8c: Updated the default version of the `@spotify/techdocs` container used when `techdocs.generator.runIn` is `docker` to `v0.3.6`, which includes an update to `mkdocs-monorepo-plugin` that allows glob-based wildcard includes.
+- Updated dependencies
+  - @backstage/integration@0.7.2
+  - @backstage/backend-common@0.10.4
+  - @backstage/config@0.1.13
+  - @backstage/catalog-model@0.9.10
+
+## 0.11.4-next.0
+
+### Patch Changes
+
+- 47277c0d8c: Updated the default version of the `@spotify/techdocs` container used when `techdocs.generator.runIn` is `docker` to `v0.3.6`, which includes an update to `mkdocs-monorepo-plugin` that allows glob-based wildcard includes.
+- Updated dependencies
+  - @backstage/backend-common@0.10.4-next.0
+  - @backstage/config@0.1.13-next.0
+  - @backstage/catalog-model@0.9.10-next.0
+  - @backstage/integration@0.7.2-next.0
+
+## 0.11.3
+
+### Patch Changes
+
+- 5333451def: Cleaned up API exports
+- Updated dependencies
+  - @backstage/config@0.1.12
+  - @backstage/integration@0.7.1
+  - @backstage/backend-common@0.10.3
+  - @backstage/errors@0.2.0
+  - @backstage/catalog-model@0.9.9
+
+## 0.11.2
+
+### Patch Changes
+
+- c2c8768771: Bump `@azure/identity` from `^1.5.0` to `^2.0.1`.
+- Updated dependencies
+  - @backstage/backend-common@0.10.1
+  - @backstage/integration@0.7.0
+
+## 0.11.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-common@0.10.0
+
+## 0.11.0
+
+### Minor Changes
+
+- 1bada775a9: Added the ability for the TechDocs Backend to (optionally) leverage a cache
+  store to improve performance when reading files from a cloud storage provider.
+
+### Patch Changes
+
+- dcd1a0c3f4: Minor improvement to the API reports, by not unpacking arguments directly
+- Updated dependencies
+  - @backstage/backend-common@0.9.13
+
+## 0.10.8
+
+### Patch Changes
+
+- bab752e2b3: Change default port of backend from 7000 to 7007.
+
+  This is due to the AirPlay Receiver process occupying port 7000 and preventing local Backstage instances on MacOS to start.
+
+  You can change the port back to 7000 or any other value by providing an `app-config.yaml` with the following values:
+
+  ```
+  backend:
+    listen: 0.0.0.0:7123
+    baseUrl: http://localhost:7123
+  ```
+
+  More information can be found here: https://backstage.io/docs/conf/writing
+
+- Updated dependencies
+  - @backstage/errors@0.1.5
+  - @backstage/backend-common@0.9.11
+
+## 0.10.7
+
+### Patch Changes
+
+- 0b60a051c9: Added OpenStack Swift case migration support.
+- 9e64a7ac1e: Allow amazon web services s3 buckets to pass an server side encryption configuration so they can publish to encrypted buckets
+- Updated dependencies
+  - @backstage/catalog-model@0.9.7
+  - @backstage/backend-common@0.9.10
+
+## 0.10.6
+
+### Patch Changes
+
+- a2d4389587: 1. Techdocs publisher constructors now use parameter objects when being
+  instantiated
+
+  2. Internal refactor of `LocalPublish` publisher to use `fromConfig` for
+     creation to be aligned with other publishers; this does not impact
+     `LocalPublish` usage.
+
+  ```diff
+  - const publisher = new LocalPublish(config, logger, discovery);
+  + const publisher = LocalPublish.fromConfig(config, logger, discovery);
+  ```
+
+- 6129c89a47: Default TechDocs container used at docs generation-time is now [v0.3.5](https://github.com/backstage/techdocs-container/releases/tag/v0.3.5).
+- f3c7eec64b: Updated to properly join URL segments under any OS for both AWS S3 and GCP
+- Updated dependencies
+  - @backstage/backend-common@0.9.9
+
+## 0.10.5
+
+### Patch Changes
+
+- d207f6ee9e: Support optional bucketRootPath configuration parameter in S3 and GCS publishers
+- Updated dependencies
+  - @backstage/config@0.1.11
+  - @backstage/errors@0.1.4
+  - @backstage/integration@0.6.9
+  - @backstage/backend-common@0.9.8
+  - @backstage/catalog-model@0.9.6
+  - @backstage/search-common@0.2.1
+
+## 0.10.4
+
+### Patch Changes
+
+- 87f5b9db13: Use docs/README.md or README.md as fallback if docs/index.md is missing
+- 36e67d2f24: Internal updates to apply more strict checks to throw errors.
+- Updated dependencies
+  - @backstage/backend-common@0.9.7
+  - @backstage/errors@0.1.3
+  - @backstage/catalog-model@0.9.5
+
+## 0.10.3
+
+### Patch Changes
+
+- 156421c59a: Sets the default techdocs docker image to the [latest released version - v0.3.3](https://github.com/backstage/techdocs-container/releases/tag/v0.3.3).
+- Updated dependencies
+  - @backstage/catalog-model@0.9.4
+  - @backstage/backend-common@0.9.6
+  - @backstage/integration@0.6.7
+
+## 0.10.2
+
+### Patch Changes
+
+- 1c75e8bf98: Add more context to techdocs log lines when files are not found along with
+  ensuring that the routers return 404 with a descriptive message.
+- e92f0f728b: Locks the version of the default docker image used to generate TechDocs. As of
+  this changelog entry, it is v0.3.2!
+- Updated dependencies
+  - @backstage/backend-common@0.9.5
+  - @backstage/integration@0.6.6
+
+## 0.10.1
+
+### Patch Changes
+
+- 96fef17a18: Upgrade git-parse-url to v11.6.0
+- Updated dependencies
+  - @backstage/backend-common@0.9.3
+  - @backstage/integration@0.6.4
+
+## 0.10.0
+
+### Minor Changes
+
+- 8b0f6f860: Set the correct `edit_uri` or `repo_url` for documentation pages that are hosted on GitHub and GitLab.
+
+  The constructor of the `TechDocsGenerator` changed.
+  Prefer the use of `TechdocsGenerator.fromConfig(…)` instead:
+
+  ```diff
+  - const techdocsGenerator = new TechdocsGenerator({
+  + const techdocsGenerator = TechdocsGenerator.fromConfig(config, {
+      logger,
+      containerRunner,
+  -   config,
+    });
+  ```
+
+### Patch Changes
+
+- 30ed662a3: Adding in-context search to TechDocs Reader component. Using existing search-backend to query for indexed search results scoped into a specific entity's techdocs. Needs TechDocsCollator enabled on the backend to work.
+
+  Adding extra information to indexed tech docs documents for search.
+
+- 3624616e7: "Local" (out-of-the-box) publisher explicitly follows lower-case entity triplet
+  logic.
+- 67ba7e088: Only write the updated `mkdocs.yml` file if the content was updated.
+
+  This keeps local files unchanged if the `dir` annotation is used in combination with the `file` location.
+
+- 8eab6be6a: Force using `posix` path for cloud storage
+- Updated dependencies
+  - @backstage/integration@0.6.3
+  - @backstage/search-common@0.2.0
+  - @backstage/catalog-model@0.9.1
+  - @backstage/backend-common@0.9.1
+
+## 0.9.0
+
+### Minor Changes
+
+- 58452cdb7: OpenStack Swift Client changed with Trendyol's OpenStack Swift SDK.
+
+  ## Migration from old OpenStack Swift Configuration
+
+  Let's assume we have the old OpenStack Swift configuration here.
+
+  ```yaml
+  techdocs:
+    publisher:
+      type: 'openStackSwift'
+      openStackSwift:
+        containerName: 'name-of-techdocs-storage-bucket'
+        credentials:
+          username: ${OPENSTACK_SWIFT_STORAGE_USERNAME}
+          password: ${OPENSTACK_SWIFT_STORAGE_PASSWORD}
+        authUrl: ${OPENSTACK_SWIFT_STORAGE_AUTH_URL}
+        keystoneAuthVersion: ${OPENSTACK_SWIFT_STORAGE_AUTH_VERSION}
+        domainId: ${OPENSTACK_SWIFT_STORAGE_DOMAIN_ID}
+        domainName: ${OPENSTACK_SWIFT_STORAGE_DOMAIN_NAME}
+        region: ${OPENSTACK_SWIFT_STORAGE_REGION}
+  ```
+
+  ##### Step 1: Change the credential keys
+
+  Since the new SDK uses _Application Credentials_ to authenticate OpenStack, we
+  need to change the keys `credentials.username` to `credentials.id`,
+  `credentials.password` to `credentials.secret` and use Application Credential ID
+  and secret here. For more detail about credentials look
+  [here](https://docs.openstack.org/api-ref/identity/v3/?expanded=password-authentication-with-unscoped-authorization-detail,authenticating-with-an-application-credential-detail#authenticating-with-an-application-credential).
+
+  ##### Step 2: Remove the unused keys
+
+  Since the new SDK doesn't use the old way authentication, we don't need the keys
+  `openStackSwift.keystoneAuthVersion`, `openStackSwift.domainId`,
+  `openStackSwift.domainName` and `openStackSwift.region`. So you can remove them.
+
+  ##### Step 3: Add Swift URL
+
+  The new SDK needs the OpenStack Swift connection URL for connecting the Swift.
+  So you need to add a new key called `openStackSwift.swiftUrl` and give the
+  OpenStack Swift url here. Example url should look like that:
+  `https://example.com:6780/swift/v1`
+
+  ##### That's it!
+
+  Your new configuration should look like that!
+
+  ```yaml
+  techdocs:
+    publisher:
+      type: 'openStackSwift'
+      openStackSwift:
+        containerName: 'name-of-techdocs-storage-bucket'
+        credentials:
+          id: ${OPENSTACK_SWIFT_STORAGE_APPLICATION_CREDENTIALS_ID}
+          secret: ${OPENSTACK_SWIFT_STORAGE_APPLICATION_CREDENTIALS_SECRET}
+        authUrl: ${OPENSTACK_SWIFT_STORAGE_AUTH_URL}
+        swiftUrl: ${OPENSTACK_SWIFT_STORAGE_SWIFT_URL}
+  ```
+
+- c772d9a84: TechDocs sites can now be accessed using paths containing entity triplets of
+  any case (e.g. `/docs/namespace/KIND/name` or `/docs/namespace/kind/name`).
+
+  If you do not use an external storage provider for serving TechDocs, this is a
+  transparent change and no action is required from you.
+
+  If you _do_ use an external storage provider for serving TechDocs (one of\* GCS,
+  AWS S3, or Azure Blob Storage), you must run a migration command against your
+  storage provider before updating.
+
+  [A migration guide is available here](https://backstage.io/docs/features/techdocs/how-to-guides#how-to-migrate-from-techdocs-alpha-to-beta).
+
+  - (\*) We're seeking help from the community to bring OpenStack Swift support
+    [to feature parity](https://github.com/backstage/backstage/issues/6763) with the above.
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-common@0.9.0
+  - @backstage/integration@0.6.2
+  - @backstage/config@0.1.8
+
 ## 0.8.1
 
 ### Patch Changes
@@ -656,7 +987,7 @@
 
   Based on the config `techdocs.publisher.type`, the publisher could be either Local publisher or Google Cloud Storage publisher.
 
-  4. `techdocs.storageUrl` is now a required config. Should be `http://localhost:7000/api/techdocs/static/docs` in most setups.
+  4. `techdocs.storageUrl` is now a required config. Should be `http://localhost:7007/api/techdocs/static/docs` in most setups.
 
   5. Parts of `@backstage/plugin-techdocs-backend` have been moved to a new package `@backstage/techdocs-common` to generate docs. Also to publish docs
      to-and-fro between TechDocs and a storage (either local or external). However, a Backstage app does NOT need to import the `techdocs-common` package -

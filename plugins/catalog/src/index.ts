@@ -14,8 +14,14 @@
  * limitations under the License.
  */
 
-export { CatalogClientWrapper } from './CatalogClientWrapper';
+/**
+ * The Backstage plugin for browsing the Backstage catalog
+ *
+ * @packageDocumentation
+ */
+
 export * from './components/AboutCard';
+export * from './components/CatalogKindHeader';
 export * from './components/CatalogResultListItem';
 export { CatalogTable } from './components/CatalogTable';
 export type { EntityRow as CatalogTableRow } from './components/CatalogTable';
@@ -23,10 +29,9 @@ export * from './components/CatalogTable/columns';
 export * from './components/EntityLayout';
 export * from './components/EntityOrphanWarning';
 export * from './components/EntityProcessingErrorsPanel';
-export * from './components/EntityPageLayout';
 export * from './components/EntitySwitch';
 export * from './components/FilteredEntityLayout';
-export { Router } from './components/Router';
+export * from './overridableComponents';
 export {
   CatalogEntityPage,
   CatalogIndexPage,
@@ -41,5 +46,9 @@ export {
   EntityHasSubcomponentsCard,
   EntityHasSystemsCard,
   EntityLinksCard,
-  EntitySystemDiagramCard,
+  RelatedEntitiesCard,
 } from './plugin';
+
+export type { EntityLinksEmptyStateClassKey } from './components/EntityLinksCard';
+export type { SystemDiagramCardClassKey } from './components/SystemDiagramCard';
+export type { DefaultCatalogPageProps } from './components/CatalogPage';

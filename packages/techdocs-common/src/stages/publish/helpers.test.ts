@@ -16,14 +16,16 @@
 import mockFs from 'mock-fs';
 import * as os from 'os';
 import * as path from 'path';
-import { Entity, ENTITY_DEFAULT_NAMESPACE } from '@backstage/catalog-model';
+import { Entity, DEFAULT_NAMESPACE } from '@backstage/catalog-model';
 import {
   getStaleFiles,
   getFileTreeRecursively,
   getCloudPathForLocalPath,
   getHeadersForFileExtension,
   bulkStorageOperation,
+  lowerCaseEntityTriplet,
   lowerCaseEntityTripletInStoragePath,
+  normalizeExternalStorageRootPath,
 } from './helpers';
 
 describe('getHeadersForFileExtension', () => {
@@ -82,13 +84,15 @@ describe('getFileTreeRecursively', () => {
   });
 });
 
-describe('lowerCaseEntityTripletInStoragePath', () => {
+describe('lowerCaseEntityTriplet', () => {
   it('returns lower-cased entity triplet path', () => {
     const originalPath = 'default/Component/backstage/index.html';
-    const actualPath = lowerCaseEntityTripletInStoragePath(originalPath);
+    const actualPath = lowerCaseEntityTriplet(originalPath);
     expect(actualPath).toBe('default/component/backstage/index.html');
   });
+});
 
+describe('lowerCaseEntityTripletInStoragePath', () => {
   it('does not lowercase beyond the triplet', () => {
     const originalPath = 'default/Component/backstage/assets/IMAGE.png';
     const actualPath = lowerCaseEntityTripletInStoragePath(originalPath);
@@ -101,6 +105,34 @@ describe('lowerCaseEntityTripletInStoragePath', () => {
     expect(() =>
       lowerCaseEntityTripletInStoragePath(originalPath),
     ).toThrowError(error);
+  });
+});
+
+describe('normalizeExternalStorageRootPath', () => {
+  it('returns an empty string when empty string provided', () => {
+    const originalPath = '';
+    const normalPath = normalizeExternalStorageRootPath(originalPath);
+    expect(normalPath).toBe('');
+  });
+  it('returns an empty string when only separator is provided', () => {
+    const originalPath = '/';
+    const normalPath = normalizeExternalStorageRootPath(originalPath);
+    expect(normalPath).toBe('');
+  });
+  it('returns normalized path from path with leading and trailing sep', () => {
+    const originalPath = '/backstage-data/techdocs/';
+    const normalPath = normalizeExternalStorageRootPath(originalPath);
+    expect(normalPath).toBe('backstage-data/techdocs');
+  });
+  it('returns normalized path from path without leading and trailing sep', () => {
+    const originalPath = 'backstage-data/techdocs';
+    const normalPath = normalizeExternalStorageRootPath(originalPath);
+    expect(normalPath).toBe('backstage-data/techdocs');
+  });
+  it('returns normalized path from path with trailing sep', () => {
+    const originalPath = 'backstage-data/techdocs/';
+    const normalPath = normalizeExternalStorageRootPath(originalPath);
+    expect(normalPath).toBe('backstage-data/techdocs');
   });
 });
 
@@ -131,23 +163,19 @@ describe('getStaleFiles', () => {
 describe('getCloudPathForLocalPath', () => {
   const entity: Entity = {
     apiVersion: 'version',
-    metadata: { namespace: 'default', name: 'backstage' },
+    metadata: { namespace: 'custom', name: 'backstage' },
     kind: 'Component',
   };
 
   it('should compose a remote bucket path including entity information', () => {
     const remoteBucket = getCloudPathForLocalPath(entity);
-    expect(remoteBucket).toBe(
-      `${entity.metadata.namespace}/${entity.kind}/${entity.metadata.name}/`,
-    );
+    expect(remoteBucket).toBe('custom/component/backstage/');
   });
 
   it('should compose a remote filename including entity information', () => {
     const localPath = 'index.html';
     const remoteBucket = getCloudPathForLocalPath(entity, localPath);
-    expect(remoteBucket).toBe(
-      `${entity.metadata.namespace}/${entity.kind}/${entity.metadata.name}/${localPath}`,
-    );
+    expect(remoteBucket).toBe(`custom/component/backstage/${localPath}`);
   });
 
   it('should use the default namespace when it is undefined', () => {
@@ -161,12 +189,71 @@ describe('getCloudPathForLocalPath', () => {
       localPath,
     );
     expect(remoteBucket).toBe(
-      `${ENTITY_DEFAULT_NAMESPACE}/${entity.kind}/${entity.metadata.name}/${localPath}`,
+      `${DEFAULT_NAMESPACE}/component/backstage/${localPath}`,
     );
+  });
+
+  it('should preserve case when legacy flag is passed', () => {
+    const remoteBucket = getCloudPathForLocalPath(entity, undefined, true);
+    expect(remoteBucket).toBe('custom/Component/backstage/');
   });
 
   it('should throw error when entity is invalid', () => {
     expect(() => getCloudPathForLocalPath({} as Entity)).toThrow();
+  });
+
+  it('should prepend root directory to destination', () => {
+    const localPath = 'index/html';
+    const rootPath = 'backstage-data/techdocs/';
+    const remoteBucket = getCloudPathForLocalPath(
+      entity,
+      localPath,
+      false,
+      rootPath,
+    );
+    expect(remoteBucket).toBe(
+      `backstage-data/techdocs/custom/component/backstage/${localPath}`,
+    );
+  });
+
+  it('should add trailing seperator to root directory', () => {
+    const localPath = 'index/html';
+    const rootPath = 'backstage-data/techdocs';
+    const remoteBucket = getCloudPathForLocalPath(
+      entity,
+      localPath,
+      false,
+      rootPath,
+    );
+    expect(remoteBucket).toBe(
+      `backstage-data/techdocs/custom/component/backstage/${localPath}`,
+    );
+  });
+
+  it('should remove leading seperator from root directory', () => {
+    const localPath = 'index/html';
+    const rootPath = '/backstage-data/techdocs/';
+    const remoteBucket = getCloudPathForLocalPath(
+      entity,
+      localPath,
+      false,
+      rootPath,
+    );
+    expect(remoteBucket).toBe(
+      `backstage-data/techdocs/custom/component/backstage/${localPath}`,
+    );
+  });
+
+  it('should ignore seperator if root directory is explicitly defined', () => {
+    const localPath = 'index/html';
+    const rootPath = '/';
+    const remoteBucket = getCloudPathForLocalPath(
+      entity,
+      localPath,
+      false,
+      rootPath,
+    );
+    expect(remoteBucket).toBe(`custom/component/backstage/${localPath}`);
   });
 });
 

@@ -16,11 +16,12 @@
 
 import {
   Entity,
-  LOCATION_ANNOTATION,
-  parseLocationReference,
-  SOURCE_LOCATION_ANNOTATION,
+  ANNOTATION_LOCATION,
+  parseLocationRef,
+  ANNOTATION_SOURCE_LOCATION,
 } from '@backstage/catalog-model';
 import { Config } from '@backstage/config';
+import { assertError } from '@backstage/errors';
 import fs from 'fs-extra';
 import os from 'os';
 import { Logger } from 'winston';
@@ -39,6 +40,7 @@ export async function getWorkingDirectory(
     await fs.access(workingDirectory, fs.constants.F_OK | fs.constants.W_OK);
     logger.info(`using working directory: ${workingDirectory}`);
   } catch (err) {
+    assertError(err);
     logger.error(
       `working directory ${workingDirectory} ${
         err.code === 'ENOENT' ? 'does not exist' : 'is not writable'
@@ -57,15 +59,15 @@ export async function getWorkingDirectory(
  * For file locations this will return a `file://` URL.
  */
 export function getEntityBaseUrl(entity: Entity): string | undefined {
-  let location = entity.metadata.annotations?.[SOURCE_LOCATION_ANNOTATION];
+  let location = entity.metadata.annotations?.[ANNOTATION_SOURCE_LOCATION];
   if (!location) {
-    location = entity.metadata.annotations?.[LOCATION_ANNOTATION];
+    location = entity.metadata.annotations?.[ANNOTATION_LOCATION];
   }
   if (!location) {
     return undefined;
   }
 
-  const { type, target } = parseLocationReference(location);
+  const { type, target } = parseLocationRef(location);
   if (type === 'url') {
     return target;
   } else if (type === 'file') {

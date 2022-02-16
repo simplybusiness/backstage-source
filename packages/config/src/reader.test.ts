@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { withLogCollector } from '../../test-utils-core/src';
+import { withLogCollector } from '@backstage/test-utils';
 import { ConfigReader } from './reader';
 
 const DATA = {
@@ -195,7 +195,7 @@ describe('ConfigReader', () => {
       {
         data: DATA,
         context: CTX,
-        filteredKeys: ['a', 'b[0]'],
+        filteredKeys: ['a', 'a2', 'b[0]'],
       },
     ]);
 
@@ -204,19 +204,43 @@ describe('ConfigReader', () => {
         "Failed to read configuration value at 'a' as it is not visible. See https://backstage.io/docs/conf/defining#visibility for instructions on how to make it visible.",
       ],
     });
-    expect(withLogCollector(() => config.getOptionalString('a'))).toMatchObject(
-      {
-        warn: [
-          "Failed to read configuration value at 'a' as it is not visible. See https://backstage.io/docs/conf/defining#visibility for instructions on how to make it visible.",
-        ],
-      },
-    );
+    expect(
+      withLogCollector(() => config.getOptionalString('a2')),
+    ).toMatchObject({
+      warn: [
+        "Failed to read configuration value at 'a2' as it is not visible. See https://backstage.io/docs/conf/defining#visibility for instructions on how to make it visible.",
+      ],
+    });
     expect(
       withLogCollector(() => config.getOptionalConfigArray('b')),
     ).toMatchObject({
       warn: [
         "Failed to read configuration array at 'b' as it does not have any visible elements. See https://backstage.io/docs/conf/defining#visibility for instructions on how to make it visible.",
       ],
+    });
+
+    (process.env as any).NODE_ENV = oldEnv;
+  });
+
+  it('only warns once when accessing filtered keys in development mode', () => {
+    const oldEnv = process.env.NODE_ENV;
+    (process.env as any).NODE_ENV = 'development';
+
+    const config = ConfigReader.fromConfigs([
+      {
+        data: DATA,
+        context: CTX,
+        filteredKeys: ['a'],
+      },
+    ]);
+
+    expect(withLogCollector(() => config.getOptional('a'))).toMatchObject({
+      warn: [
+        "Failed to read configuration value at 'a' as it is not visible. See https://backstage.io/docs/conf/defining#visibility for instructions on how to make it visible.",
+      ],
+    });
+    expect(withLogCollector(() => config.getOptional('a'))).toMatchObject({
+      warn: [],
     });
 
     (process.env as any).NODE_ENV = oldEnv;
@@ -240,6 +264,19 @@ describe('ConfigReader', () => {
     expect(
       withLogCollector(() => config.getOptionalConfigArray('b')),
     ).toMatchObject({ warn: [] });
+  });
+
+  it('should coerce number strings to numbers', () => {
+    const config = ConfigReader.fromConfigs([
+      {
+        data: {
+          port: '123',
+        },
+        context: '1',
+      },
+    ]);
+
+    expect(config.getNumber('port')).toEqual(123);
   });
 });
 
@@ -637,16 +674,50 @@ describe('ConfigReader.get()', () => {
     });
   });
 
-  it('coerces number strings to numbers', () => {
-    const config = ConfigReader.fromConfigs([
-      {
-        data: {
-          port: '123',
-        },
-        context: '1',
+  it('should return deep clones of the backing data', () => {
+    const data1 = {
+      foo: {
+        bar: [],
+        baz: {},
       },
+    };
+    const data2 = {
+      x: {
+        y: {
+          z: {},
+        },
+      },
+    };
+
+    const reader = ConfigReader.fromConfigs([
+      { data: data1, context: '1' },
+      { data: data2, context: '2' },
     ]);
 
-    expect(config.getNumber('port')).toEqual(123);
+    reader.get<any>().foo.bar.push(1);
+    reader.get<any>('foo').bar.push(1);
+    reader.get<any>('foo.bar').push(1);
+    reader.get<any>().foo.baz.x = 1;
+    reader.get<any>('foo').baz.x = 1;
+    reader.get<any>('foo.baz').x = 1;
+    reader.get<any>().x.y.z.w = 1;
+    reader.get<any>('x').y.z.w = 1;
+    reader.get<any>('x.y').z.w = 1;
+    reader.get<any>('x.y.z').w = 1;
+
+    const readerSingle = ConfigReader.fromConfigs([
+      { data: data1, context: '1' },
+    ]);
+
+    readerSingle.get<any>().foo.bar.push(1);
+    readerSingle.get<any>('foo').bar.push(1);
+    readerSingle.get<any>('foo.bar').push(1);
+    readerSingle.get<any>().foo.baz.x = 1;
+    readerSingle.get<any>('foo').baz.x = 1;
+    readerSingle.get<any>('foo.baz').x = 1;
+
+    expect(data1.foo.bar).toEqual([]);
+    expect(data1.foo.baz).toEqual({});
+    expect(data2.x.y.z).toEqual({});
   });
 });

@@ -21,6 +21,7 @@ import {
 } from '@azure/storage-blob';
 import { Entity, EntityName } from '@backstage/catalog-model';
 import { Config } from '@backstage/config';
+import { assertError, ForwardedError } from '@backstage/errors';
 import express from 'express';
 import JSON5 from 'json5';
 import limiterFactory from 'p-limit';
@@ -31,12 +32,14 @@ import {
   getCloudPathForLocalPath,
   getFileTreeRecursively,
   getHeadersForFileExtension,
+  lowerCaseEntityTriplet,
   getStaleFiles,
   lowerCaseEntityTripletInStoragePath,
 } from './helpers';
 import {
   PublisherBase,
   PublishRequest,
+  PublishResponse,
   ReadinessResponse,
   TechDocsMetadata,
 } from './types';
@@ -45,6 +48,23 @@ import {
 const BATCH_CONCURRENCY = 3;
 
 export class AzureBlobStoragePublish implements PublisherBase {
+  private readonly storageClient: BlobServiceClient;
+  private readonly containerName: string;
+  private readonly legacyPathCasing: boolean;
+  private readonly logger: Logger;
+
+  constructor(options: {
+    storageClient: BlobServiceClient;
+    containerName: string;
+    legacyPathCasing: boolean;
+    logger: Logger;
+  }) {
+    this.storageClient = options.storageClient;
+    this.containerName = options.containerName;
+    this.legacyPathCasing = options.legacyPathCasing;
+    this.logger = options.logger;
+  }
+
   static fromConfig(config: Config, logger: Logger): PublisherBase {
     let containerName = '';
     try {
@@ -88,17 +108,17 @@ export class AzureBlobStoragePublish implements PublisherBase {
       credential,
     );
 
-    return new AzureBlobStoragePublish(storageClient, containerName, logger);
-  }
+    const legacyPathCasing =
+      config.getOptionalBoolean(
+        'techdocs.legacyUseCaseSensitiveTripletPaths',
+      ) || false;
 
-  constructor(
-    private readonly storageClient: BlobServiceClient,
-    private readonly containerName: string,
-    private readonly logger: Logger,
-  ) {
-    this.storageClient = storageClient;
-    this.containerName = containerName;
-    this.logger = logger;
+    return new AzureBlobStoragePublish({
+      storageClient: storageClient,
+      containerName: containerName,
+      legacyPathCasing: legacyPathCasing,
+      logger: logger,
+    });
   }
 
   async getReadiness(): Promise<ReadinessResponse> {
@@ -119,6 +139,7 @@ export class AzureBlobStoragePublish implements PublisherBase {
         );
       }
     } catch (e) {
+      assertError(e);
       this.logger.error(`from Azure Blob Storage client library: ${e.message}`);
     }
 
@@ -136,9 +157,19 @@ export class AzureBlobStoragePublish implements PublisherBase {
    * Upload all the files from the generated `directory` to the Azure Blob Storage container.
    * Directory structure used in the container is - entityNamespace/entityKind/entityName/index.html
    */
-  async publish({ entity, directory }: PublishRequest): Promise<void> {
+  async publish({
+    entity,
+    directory,
+  }: PublishRequest): Promise<PublishResponse> {
+    const objects: string[] = [];
+    const useLegacyPathCasing = this.legacyPathCasing;
+
     // First, try to retrieve a list of all individual files currently existing
-    const remoteFolder = getCloudPathForLocalPath(entity);
+    const remoteFolder = getCloudPathForLocalPath(
+      entity,
+      undefined,
+      useLegacyPathCasing,
+    );
     let existingFiles: string[] = [];
     try {
       existingFiles = await this.getAllBlobsFromContainer({
@@ -146,6 +177,7 @@ export class AzureBlobStoragePublish implements PublisherBase {
         maxPageSize: BATCH_CONCURRENCY,
       });
     } catch (e) {
+      assertError(e);
       this.logger.error(
         `Unable to list files for Entity ${entity.metadata.name}: ${e.message}`,
       );
@@ -167,10 +199,14 @@ export class AzureBlobStoragePublish implements PublisherBase {
           const relativeFilePath = path.normalize(
             path.relative(directory, absoluteFilePath),
           );
+          const remotePath = getCloudPathForLocalPath(
+            entity,
+            relativeFilePath,
+            useLegacyPathCasing,
+          );
+          objects.push(remotePath);
           const response = await container
-            .getBlockBlobClient(
-              getCloudPathForLocalPath(entity, relativeFilePath),
-            )
+            .getBlockBlobClient(remotePath)
             .uploadFile(absoluteFilePath);
 
           if (response._response.status >= 400) {
@@ -212,6 +248,7 @@ export class AzureBlobStoragePublish implements PublisherBase {
           getCloudPathForLocalPath(
             entity,
             path.relative(directory, absoluteFilePath),
+            useLegacyPathCasing,
           ),
       );
 
@@ -232,6 +269,8 @@ export class AzureBlobStoragePublish implements PublisherBase {
       const errorMessage = `Unable to delete file(s) from Azure. ${error}`;
       this.logger.error(errorMessage);
     }
+
+    return { objects };
   }
 
   private download(containerName: string, blobPath: string): Promise<Buffer> {
@@ -263,7 +302,11 @@ export class AzureBlobStoragePublish implements PublisherBase {
   async fetchTechDocsMetadata(
     entityName: EntityName,
   ): Promise<TechDocsMetadata> {
-    const entityRootDir = `${entityName.namespace}/${entityName.kind}/${entityName.name}`;
+    const entityTriplet = `${entityName.namespace}/${entityName.kind}/${entityName.name}`;
+    const entityRootDir = this.legacyPathCasing
+      ? entityTriplet
+      : lowerCaseEntityTriplet(entityTriplet);
+
     try {
       const techdocsMetadataJson = await this.download(
         this.containerName,
@@ -279,7 +322,7 @@ export class AzureBlobStoragePublish implements PublisherBase {
       );
       return techdocsMetadata;
     } catch (e) {
-      throw new Error(`TechDocs metadata fetch failed, ${e.message}`);
+      throw new ForwardedError('TechDocs metadata fetch failed', e);
     }
   }
 
@@ -289,14 +332,19 @@ export class AzureBlobStoragePublish implements PublisherBase {
   docsRouter(): express.Handler {
     return (req, res) => {
       // Decode and trim the leading forward slash
+      const decodedUri = decodeURI(req.path.replace(/^\//, ''));
+
       // filePath example - /default/Component/documented-component/index.html
-      const filePath = decodeURI(req.path.replace(/^\//, ''));
+      const filePath = this.legacyPathCasing
+        ? decodedUri
+        : lowerCaseEntityTripletInStoragePath(decodedUri);
+
       // Files with different extensions (CSS, HTML) need to be served with different headers
       const fileExtension = platformPath.extname(filePath);
       const responseHeaders = getHeadersForFileExtension(fileExtension);
 
-      try {
-        this.download(this.containerName, filePath).then(fileContent => {
+      this.download(this.containerName, filePath)
+        .then(fileContent => {
           // Inject response headers
           for (const [headerKey, headerValue] of Object.entries(
             responseHeaders,
@@ -304,11 +352,13 @@ export class AzureBlobStoragePublish implements PublisherBase {
             res.setHeader(headerKey, headerValue);
           }
           res.send(fileContent);
+        })
+        .catch(e => {
+          this.logger.warn(
+            `TechDocs Azure router failed to serve content from container ${this.containerName} at path ${filePath}: ${e.message}`,
+          );
+          res.status(404).send('File Not Found');
         });
-      } catch (e) {
-        this.logger.error(e.message);
-        res.status(404).json(e.message);
-      }
     };
   }
 
@@ -317,7 +367,11 @@ export class AzureBlobStoragePublish implements PublisherBase {
    * can be used to verify if there are any pre-generated docs available to serve.
    */
   hasDocsBeenGenerated(entity: Entity): Promise<boolean> {
-    const entityRootDir = `${entity.metadata.namespace}/${entity.kind}/${entity.metadata.name}`;
+    const entityTriplet = `${entity.metadata.namespace}/${entity.kind}/${entity.metadata.name}`;
+    const entityRootDir = this.legacyPathCasing
+      ? entityTriplet
+      : lowerCaseEntityTriplet(entityTriplet);
+
     return this.storageClient
       .getContainerClient(this.containerName)
       .getBlockBlobClient(`${entityRootDir}/index.html`)
@@ -347,6 +401,7 @@ export class AzureBlobStoragePublish implements PublisherBase {
     try {
       newPath = lowerCaseEntityTripletInStoragePath(originalPath);
     } catch (e) {
+      assertError(e);
       this.logger.warn(e.message);
       return;
     }
@@ -356,6 +411,7 @@ export class AzureBlobStoragePublish implements PublisherBase {
       this.logger.verbose(`Migrating ${originalPath}`);
       await this.renameBlob(originalPath, newPath, removeOriginal);
     } catch (e) {
+      assertError(e);
       this.logger.warn(`Unable to migrate ${originalPath}: ${e.message}`);
     }
   }

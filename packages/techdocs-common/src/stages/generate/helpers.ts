@@ -14,16 +14,20 @@
  * limitations under the License.
  */
 
-import { Entity } from '@backstage/catalog-model';
 import { isChildPath } from '@backstage/backend-common';
-import { spawn } from 'child_process';
+import { Entity } from '@backstage/catalog-model';
+import { assertError, ForwardedError } from '@backstage/errors';
+import { ScmIntegrationRegistry } from '@backstage/integration';
+import { SpawnOptionsWithoutStdio, spawn } from 'child_process';
 import fs from 'fs-extra';
+import gitUrlParse from 'git-url-parse';
 import yaml, { DEFAULT_SCHEMA, Type } from 'js-yaml';
 import path, { resolve as resolvePath } from 'path';
 import { PassThrough, Writable } from 'stream';
 import { Logger } from 'winston';
 import { ParsedLocationAnnotation } from '../../helpers';
 import { SupportedGeneratorKey } from './types';
+import { getFileTreeRecursively } from '../publish/helpers';
 
 // TODO: Implement proper support for more generators.
 export function getGeneratorKey(entity: Entity): SupportedGeneratorKey {
@@ -35,19 +39,18 @@ export function getGeneratorKey(entity: Entity): SupportedGeneratorKey {
 }
 
 export type RunCommandOptions = {
+  /** command to run */
   command: string;
+  /** arguments to pass the command */
   args: string[];
-  options: object;
+  /** options to pass to spawn */
+  options: SpawnOptionsWithoutStdio;
+  /** stream to capture stdout and stderr output */
   logStream?: Writable;
 };
 
 /**
- *
- * @param options the options object
- * @param options.command the command to run
- * @param options.args the arguments to pass the command
- * @param options.options options used in spawn
- * @param options.logStream the log streamer to capture log messages
+ * Run a command in a sub-process, normally a shell command.
  */
 export const runCommand = async ({
   command,
@@ -80,63 +83,42 @@ export const runCommand = async ({
 };
 
 /**
- * Return true if mkdocs can compile docs with provided repo_url
+ * Return the source url for MkDocs based on the backstage.io/techdocs-ref annotation.
+ * Depending on the type of target, it can either return a repo_url, an edit_uri, both, or none.
  *
- * Valid repo_url examples in mkdocs.yml
- * - https://github.com/backstage/backstage
- * - https://gitlab.com/org/repo/
- * - http://github.com/backstage/backstage
- * - A http(s) protocol URL to the root of the repository
- *
- * Invalid repo_url examples in mkdocs.yml
- * - https://github.com/backstage/backstage/blob/master/plugins/techdocs-backend/examples/documented-component
- * - (anything that is not valid as described above)
- *
- * @param {string} repoUrl URL supposed to be used as repo_url in mkdocs.yml
- * @param {string} locationType Type of source code host - github, gitlab, dir, url, etc.
- * @returns {boolean}
- */
-export const isValidRepoUrlForMkdocs = (
-  repoUrl: string,
-  locationType: string,
-): boolean => {
-  // Trim trailing slash
-  const cleanRepoUrl = repoUrl.replace(/\/$/, '');
-
-  if (locationType === 'github' || locationType === 'gitlab') {
-    // A valid repoUrl to the root of the repository will be split into 5 strings if split using the / delimiter.
-    // We do not want URLs which have more than that number of forward slashes since they will signify a non-root location
-    // Note: This is not the best possible implementation but will work most of the times.. Feel free to improve or
-    // highlight edge cases.
-    return cleanRepoUrl.split('/').length === 5;
-  }
-
-  return false;
-};
-
-/**
- * Return a valid URL of the repository used in backstage.io/techdocs-ref annotation.
- * Return undefined if the `target` is not valid in context of repo_url in mkdocs.yml
- * Alter URL so that it is a valid repo_url config in mkdocs.yml
- *
- * @param {ParsedLocationAnnotation} parsedLocationAnnotation Object with location url and type
- * @returns {string | undefined}
+ * @param parsedLocationAnnotation - Object with location url and type
+ * @param scmIntegrations - the scmIntegration to do url transformations
+ * @param docsFolder - the configured docs folder in the mkdocs.yml (defaults to 'docs')
+ * @returns the settings for the mkdocs.yml
  */
 export const getRepoUrlFromLocationAnnotation = (
   parsedLocationAnnotation: ParsedLocationAnnotation,
-): string | undefined => {
+  scmIntegrations: ScmIntegrationRegistry,
+  docsFolder: string = 'docs',
+): { repo_url?: string; edit_uri?: string } => {
   const { type: locationType, target } = parsedLocationAnnotation;
 
-  // Add more options from the RemoteProtocol type of parsedLocationAnnotation.type here
-  // when TechDocs supports more hosts and if mkdocs can generated an Edit URL for them.
-  const supportedHosts = ['github', 'gitlab'];
+  if (locationType === 'url') {
+    const integration = scmIntegrations.byUrl(target);
 
-  if (supportedHosts.includes(locationType)) {
-    // Trim .git or .git/ from the end of repository url
-    return target.replace(/.git\/*$/, '');
+    // We only support it for github and gitlab for now as the edit_uri
+    // is not properly supported for others yet.
+    if (integration && ['github', 'gitlab'].includes(integration.type)) {
+      // handle the case where a user manually writes url:https://github.com/backstage/backstage i.e. without /blob/...
+      const { filepathtype } = gitUrlParse(target);
+      if (filepathtype === '') {
+        return { repo_url: target };
+      }
+
+      const sourceFolder = integration.resolveUrl({
+        url: `./${docsFolder}`,
+        base: target,
+      });
+      return { edit_uri: integration.resolveEditUrl(sourceFolder) };
+    }
   }
 
-  return undefined;
+  return {};
 };
 
 class UnknownTag {
@@ -158,7 +140,7 @@ const MKDOCS_SCHEMA = DEFAULT_SCHEMA.extend([
  * Finds and loads the contents of either an mkdocs.yml or mkdocs.yaml file,
  * depending on which is present (MkDocs supports both as of v1.2.2).
  *
- * @param {string} inputDir base dir to be searched for either an mkdocs.yml or
+ * @param inputDir - base dir to be searched for either an mkdocs.yml or
  *   mkdocs.yaml file.
  */
 export const getMkdocsYml = async (
@@ -174,8 +156,9 @@ export const getMkdocsYml = async (
       mkdocsYmlPath = path.join(inputDir, 'mkdocs.yml');
       mkdocsYmlFileString = await fs.readFile(mkdocsYmlPath, 'utf8');
     } catch (error) {
-      throw new Error(
-        `Could not read MkDocs YAML config file mkdocs.yml or mkdocs.yaml for validation: ${error.message}`,
+      throw new ForwardedError(
+        'Could not read MkDocs YAML config file mkdocs.yml or mkdocs.yaml for validation',
+        error,
       );
     }
   }
@@ -190,34 +173,41 @@ export const getMkdocsYml = async (
  * Validating mkdocs config file for incorrect/insecure values
  * Throws on invalid configs
  *
- * @param {string} inputDir base dir to be used as a docs_dir path validity check
- * @param {string} mkdocsYmlFileString The string contents of the loaded
+ * @param inputDir - base dir to be used as a docs_dir path validity check
+ * @param mkdocsYmlFileString - The string contents of the loaded
  *   mkdocs.yml or equivalent of a docs site
+ * @returns the parsed docs_dir or undefined
  */
 export const validateMkdocsYaml = async (
   inputDir: string,
   mkdocsYmlFileString: string,
-) => {
-  const mkdocsYml: any = yaml.load(mkdocsYmlFileString, {
+): Promise<string | undefined> => {
+  const mkdocsYml = yaml.load(mkdocsYmlFileString, {
     schema: MKDOCS_SCHEMA,
   });
 
+  if (mkdocsYml === null || typeof mkdocsYml !== 'object') {
+    return undefined;
+  }
+
+  const parsedMkdocsYml: Record<string, any> = mkdocsYml;
   if (
-    mkdocsYml.docs_dir &&
-    !isChildPath(inputDir, resolvePath(inputDir, mkdocsYml.docs_dir))
+    parsedMkdocsYml.docs_dir &&
+    !isChildPath(inputDir, resolvePath(inputDir, parsedMkdocsYml.docs_dir))
   ) {
     throw new Error(
       `docs_dir configuration value in mkdocs can't be an absolute directory or start with ../ for security reasons.
        Use relative paths instead which are resolved relative to your mkdocs.yml file location.`,
     );
   }
+  return parsedMkdocsYml.docs_dir;
 };
 
 /**
  * Update the mkdocs.yml file before TechDocs generator uses it to generate docs site.
  *
  * List of tasks:
- * - Add repo_url if it does not exists
+ * - Add repo_url or edit_uri if it does not exists
  * If mkdocs.yml has a repo_url, the generated docs site gets an Edit button on the pages by default.
  * If repo_url is missing in mkdocs.yml, we will use techdocs annotation of the entity to possibly get
  * the repository URL.
@@ -225,19 +215,26 @@ export const validateMkdocsYaml = async (
  * This function will not throw an error since this is not critical to the whole TechDocs pipeline.
  * Instead it will log warnings if there are any errors in reading, parsing or writing YAML.
  *
- * @param {string} mkdocsYmlPath Absolute path to mkdocs.yml or equivalent of a docs site
- * @param {Logger} logger
- * @param {ParsedLocationAnnotation} parsedLocationAnnotation Object with location url and type
+ * @param mkdocsYmlPath - Absolute path to mkdocs.yml or equivalent of a docs site
+ * @param logger - A logger instance
+ * @param parsedLocationAnnotation - Object with location url and type
+ * @param scmIntegrations - the scmIntegration to do url transformations
  */
 export const patchMkdocsYmlPreBuild = async (
   mkdocsYmlPath: string,
   logger: Logger,
   parsedLocationAnnotation: ParsedLocationAnnotation,
+  scmIntegrations: ScmIntegrationRegistry,
 ) => {
+  // We only want to override the mkdocs.yml if it has actually changed. This is relevant if
+  // used with a 'dir' location on the file system as this would permanently update the file.
+  let didEdit = false;
+
   let mkdocsYmlFileString;
   try {
     mkdocsYmlFileString = await fs.readFile(mkdocsYmlPath, 'utf8');
   } catch (error) {
+    assertError(error);
     logger.warn(
       `Could not read MkDocs YAML config file ${mkdocsYmlPath} before running the generator: ${error.message}`,
     );
@@ -254,32 +251,46 @@ export const patchMkdocsYmlPreBuild = async (
       throw new Error('Bad YAML format.');
     }
   } catch (error) {
+    assertError(error);
     logger.warn(
       `Error in parsing YAML at ${mkdocsYmlPath} before running the generator. ${error.message}`,
     );
     return;
   }
 
-  // Add repo_url to mkdocs.yml if it is missing. This will enable the Page edit button generated by MkDocs.
-  if (!('repo_url' in mkdocsYml)) {
-    const repoUrl = getRepoUrlFromLocationAnnotation(parsedLocationAnnotation);
-    if (repoUrl !== undefined) {
-      // mkdocs.yml will not build with invalid repo_url. So, make sure it is valid.
-      // TODO: this is no longer working/meaningful because annotation type is
-      // now only ever "url" or "dir." Should be re-implemented!
-      if (isValidRepoUrlForMkdocs(repoUrl, parsedLocationAnnotation.type)) {
-        mkdocsYml.repo_url = repoUrl;
-      }
+  // Add edit_uri and/or repo_url to mkdocs.yml if it is missing.
+  // This will enable the Page edit button generated by MkDocs.
+  // If the either has been set, keep the original value
+  if (!('repo_url' in mkdocsYml) && !('edit_uri' in mkdocsYml)) {
+    const result = getRepoUrlFromLocationAnnotation(
+      parsedLocationAnnotation,
+      scmIntegrations,
+      mkdocsYml.docs_dir,
+    );
+
+    if (result.repo_url || result.edit_uri) {
+      mkdocsYml.repo_url = result.repo_url;
+      mkdocsYml.edit_uri = result.edit_uri;
+      didEdit = true;
+
+      logger.info(
+        `Set ${JSON.stringify(
+          result,
+        )}. You can disable this feature by manually setting 'repo_url' or 'edit_uri' according to the MkDocs documentation at https://www.mkdocs.org/user-guide/configuration/#repo_url`,
+      );
     }
   }
 
   try {
-    await fs.writeFile(
-      mkdocsYmlPath,
-      yaml.dump(mkdocsYml, { schema: MKDOCS_SCHEMA }),
-      'utf8',
-    );
+    if (didEdit) {
+      await fs.writeFile(
+        mkdocsYmlPath,
+        yaml.dump(mkdocsYml, { schema: MKDOCS_SCHEMA }),
+        'utf8',
+      );
+    }
   } catch (error) {
+    assertError(error);
     logger.warn(
       `Could not write to ${mkdocsYmlPath} after updating it before running the generator. ${error.message}`,
     );
@@ -288,14 +299,66 @@ export const patchMkdocsYmlPreBuild = async (
 };
 
 /**
- * Update the techdocs_metadata.json to add a new build timestamp metadata. Create the .json file if it doesn't exist.
- *
- * @param {string} techdocsMetadataPath File path to techdocs_metadata.json
+ * Update docs/index.md file before TechDocs generator uses it to generate docs site,
+ * falling back to docs/README.md or README.md in case a default docs/index.md
+ * is not provided.
  */
-export const addBuildTimestampMetadata = async (
+export const patchIndexPreBuild = async ({
+  inputDir,
+  logger,
+  docsDir = 'docs',
+}: {
+  inputDir: string;
+  logger: Logger;
+  docsDir?: string;
+}) => {
+  const docsPath = path.join(inputDir, docsDir);
+  const indexMdPath = path.join(docsPath, 'index.md');
+
+  if (await fs.pathExists(indexMdPath)) {
+    return;
+  }
+  logger.warn(`${path.join(docsDir, 'index.md')} not found.`);
+  const fallbacks = [
+    path.join(docsPath, 'README.md'),
+    path.join(docsPath, 'readme.md'),
+    path.join(inputDir, 'README.md'),
+    path.join(inputDir, 'readme.md'),
+  ];
+
+  await fs.ensureDir(docsPath);
+  for (const filePath of fallbacks) {
+    try {
+      await fs.copyFile(filePath, indexMdPath);
+      return;
+    } catch (error) {
+      logger.warn(`${path.relative(inputDir, filePath)} not found.`);
+    }
+  }
+
+  logger.warn(
+    `Could not find any techdocs' index file. Please make sure at least one of ${[
+      indexMdPath,
+      ...fallbacks,
+    ].join(' ')} exists.`,
+  );
+};
+
+/**
+ * Create or update the techdocs_metadata.json. Values initialized/updated are:
+ * - The build_timestamp (now)
+ * - The list of files generated
+ *
+ * @param techdocsMetadataPath - File path to techdocs_metadata.json
+ */
+export const createOrUpdateMetadata = async (
   techdocsMetadataPath: string,
   logger: Logger,
 ): Promise<void> => {
+  const techdocsMetadataDir = techdocsMetadataPath
+    .split(path.sep)
+    .slice(0, -1)
+    .join(path.sep);
   // check if file exists, create if it does not.
   try {
     await fs.access(techdocsMetadataPath, fs.constants.F_OK);
@@ -308,12 +371,26 @@ export const addBuildTimestampMetadata = async (
   try {
     json = await fs.readJson(techdocsMetadataPath);
   } catch (err) {
+    assertError(err);
     const message = `Invalid JSON at ${techdocsMetadataPath} with error ${err.message}`;
     logger.error(message);
     throw new Error(message);
   }
 
   json.build_timestamp = Date.now();
+
+  // Get and write generated files to the metadata JSON. Each file string is in
+  // a form appropriate for invalidating the associated object from cache.
+  try {
+    json.files = (await getFileTreeRecursively(techdocsMetadataDir)).map(file =>
+      file.replace(`${techdocsMetadataDir}${path.sep}`, ''),
+    );
+  } catch (err) {
+    assertError(err);
+    json.files = [];
+    logger.warn(`Unable to add files list to metadata: ${err.message}`);
+  }
+
   await fs.writeJson(techdocsMetadataPath, json);
   return;
 };
@@ -323,8 +400,8 @@ export const addBuildTimestampMetadata = async (
  * This is helpful to check if a TechDocs site in storage has gone outdated, without maintaining an in-memory build info
  * per Backstage instance.
  *
- * @param {string} techdocsMetadataPath File path to techdocs_metadata.json
- * @param {string} etag
+ * @param techdocsMetadataPath - File path to techdocs_metadata.json
+ * @param etag - The ETag to use
  */
 export const storeEtagMetadata = async (
   techdocsMetadataPath: string,

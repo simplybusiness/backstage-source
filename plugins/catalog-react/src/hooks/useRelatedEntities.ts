@@ -16,7 +16,7 @@
 import { Entity, EntityRelation } from '@backstage/catalog-model';
 import { useApi } from '@backstage/core-plugin-api';
 import { chunk, groupBy } from 'lodash';
-import { useAsync } from 'react-use';
+import useAsync from 'react-use/lib/useAsync';
 import { catalogApiRef } from '../api';
 
 const BATCH_SIZE = 20;
@@ -39,8 +39,12 @@ export function useRelatedEntities(
       entity.relations &&
       entity.relations.filter(
         r =>
-          (!type || r.type.toLowerCase() === type.toLowerCase()) &&
-          (!kind || r.target.kind.toLowerCase() === kind.toLowerCase()),
+          (!type ||
+            r.type.toLocaleLowerCase('en-US') ===
+              type.toLocaleLowerCase('en-US')) &&
+          (!kind ||
+            r.target.kind.toLocaleLowerCase('en-US') ===
+              kind.toLocaleLowerCase('en-US')),
       );
 
     if (!relations) {
@@ -54,7 +58,7 @@ export function useRelatedEntities(
     // `filter=kind=component,namespace=default,name=example1,example2`
     const relationsByKindAndNamespace: EntityRelation[][] = Object.values(
       groupBy(relations, ({ target }) => {
-        return `${target.kind}:${target.namespace}`.toLowerCase();
+        return `${target.kind}:${target.namespace}`.toLocaleLowerCase('en-US');
       }),
     );
 

@@ -15,9 +15,12 @@
  */
 
 import { Config } from '@backstage/config';
+import { trimEnd } from 'lodash';
 
 /**
  * The configuration parameters for a single Microsoft Graph provider.
+ *
+ * @public
  */
 export type MicrosoftGraphProviderConfig = {
   /**
@@ -41,8 +44,6 @@ export type MicrosoftGraphProviderConfig = {
   clientId: string;
   /**
    * The OAuth client secret to use for authenticating requests.
-   *
-   * @visibility secret
    */
   clientSecret: string;
   /**
@@ -52,6 +53,18 @@ export type MicrosoftGraphProviderConfig = {
    */
   userFilter?: string;
   /**
+   * The expand argument to apply to users.
+   *
+   * E.g. "manager"
+   */
+  userExpand?: string[];
+  /**
+   * The filter to apply to extract users by groups memberships.
+   *
+   * E.g. "displayName eq 'Backstage Users'"
+   */
+  userGroupMemberFilter?: string;
+  /**
    * The filter to apply to extract groups.
    *
    * E.g. "securityEnabled eq false and mailEnabled eq true"
@@ -59,6 +72,13 @@ export type MicrosoftGraphProviderConfig = {
   groupFilter?: string;
 };
 
+/**
+ * Parses configuration.
+ *
+ * @param config - The root of the msgraph config hierarchy
+ *
+ * @public
+ */
 export function readMicrosoftGraphConfig(
   config: Config,
 ): MicrosoftGraphProviderConfig[] {
@@ -66,15 +86,25 @@ export function readMicrosoftGraphConfig(
   const providerConfigs = config.getOptionalConfigArray('providers') ?? [];
 
   for (const providerConfig of providerConfigs) {
-    const target = providerConfig.getString('target').replace(/\/+$/, '');
-    const authority =
-      providerConfig.getOptionalString('authority')?.replace(/\/+$/, '') ||
-      'https://login.microsoftonline.com';
+    const target = trimEnd(providerConfig.getString('target'), '/');
+
+    const authority = providerConfig.getOptionalString('authority')
+      ? trimEnd(providerConfig.getOptionalString('authority'), '/')
+      : 'https://login.microsoftonline.com';
     const tenantId = providerConfig.getString('tenantId');
     const clientId = providerConfig.getString('clientId');
     const clientSecret = providerConfig.getString('clientSecret');
     const userFilter = providerConfig.getOptionalString('userFilter');
+    const userGroupMemberFilter = providerConfig.getOptionalString(
+      'userGroupMemberFilter',
+    );
     const groupFilter = providerConfig.getOptionalString('groupFilter');
+
+    if (userFilter && userGroupMemberFilter) {
+      throw new Error(
+        `userFilter and userGroupMemberFilter are mutually exclusive, only one can be specified.`,
+      );
+    }
 
     providers.push({
       target,
@@ -83,6 +113,7 @@ export function readMicrosoftGraphConfig(
       clientId,
       clientSecret,
       userFilter,
+      userGroupMemberFilter,
       groupFilter,
     });
   }

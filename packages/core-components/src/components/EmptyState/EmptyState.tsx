@@ -14,22 +14,30 @@
  * limitations under the License.
  */
 
+import Grid from '@material-ui/core/Grid';
+import { makeStyles } from '@material-ui/core/styles';
+import Typography from '@material-ui/core/Typography';
 import React from 'react';
-import { makeStyles, Typography, Grid } from '@material-ui/core';
 import { EmptyStateImage } from './EmptyStateImage';
 
-const useStyles = makeStyles(theme => ({
-  root: {
-    backgroundColor: theme.palette.background.default,
-    padding: theme.spacing(2, 0, 0, 0),
-  },
-  action: {
-    marginTop: theme.spacing(2),
-  },
-  imageContainer: {
-    position: 'relative',
-  },
-}));
+/** @public */
+export type EmptyStateClassKey = 'root' | 'action' | 'imageContainer';
+
+const useStyles = makeStyles(
+  theme => ({
+    root: {
+      backgroundColor: theme.palette.background.default,
+      padding: theme.spacing(2, 0, 0, 0),
+    },
+    action: {
+      marginTop: theme.spacing(2),
+    },
+    imageContainer: {
+      position: 'relative',
+    },
+  }),
+  { name: 'BackstageEmptyState' },
+);
 
 type Props = {
   title: string;
@@ -38,7 +46,14 @@ type Props = {
   action?: JSX.Element;
 };
 
-export const EmptyState = ({ title, description, missing, action }: Props) => {
+/**
+ * Various placeholder views for empty state pages
+ *
+ * @public
+ *
+ */
+export function EmptyState(props: Props) {
+  const { title, description, missing, action } = props;
   const classes = useStyles();
   return (
     <Grid
@@ -67,4 +82,4 @@ export const EmptyState = ({ title, description, missing, action }: Props) => {
       </Grid>
     </Grid>
   );
-};
+}

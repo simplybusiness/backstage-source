@@ -21,8 +21,8 @@ import {
   RELATION_OWNED_BY,
   UserEntity,
 } from '@backstage/catalog-model';
-import { ApiProvider, ApiRegistry } from '@backstage/core-app-api';
 import { IdentityApi, identityApiRef } from '@backstage/core-plugin-api';
+import { TestApiProvider } from '@backstage/test-utils';
 import { renderHook } from '@testing-library/react-hooks';
 import React from 'react';
 import { catalogApiRef } from '../api';
@@ -33,14 +33,11 @@ import {
 } from './useEntityOwnership';
 
 describe('useEntityOwnership', () => {
-  type MockIdentityApi = jest.Mocked<
-    Pick<IdentityApi, 'getUserId' | 'getIdToken'>
-  >;
+  type MockIdentityApi = jest.Mocked<Pick<IdentityApi, 'getBackstageIdentity'>>;
   type MockCatalogApi = jest.Mocked<Pick<CatalogApi, 'getEntityByName'>>;
 
   const mockIdentityApi: MockIdentityApi = {
-    getUserId: jest.fn(),
-    getIdToken: jest.fn(),
+    getBackstageIdentity: jest.fn(),
   };
   const mockCatalogApi: MockCatalogApi = {
     getEntityByName: jest.fn(),
@@ -50,14 +47,14 @@ describe('useEntityOwnership', () => {
   const catalogApi = mockCatalogApi as unknown as CatalogApi;
 
   const Wrapper = ({ children }: { children?: React.ReactNode }) => (
-    <ApiProvider
-      apis={ApiRegistry.with(identityApiRef, identityApi).with(
-        catalogApiRef,
-        catalogApi,
-      )}
+    <TestApiProvider
+      apis={[
+        [identityApiRef, identityApi],
+        [catalogApiRef, catalogApi],
+      ]}
     >
       {children}
-    </ApiProvider>
+    </TestApiProvider>
   );
 
   const ownedEntity: ComponentEntity = {
@@ -100,80 +97,19 @@ describe('useEntityOwnership', () => {
     ],
   };
 
-  // these were generated on https://jwt.io, based off of its default example token
-  // no ent at all
-  const tokenNoEnt =
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
-  // "ent": []
-  const tokenEmptyEnt =
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJlbnQiOltdfQ.Khyza2whczkoC4wSCLBhBaBB9-ktIkk7gpXEgQPHhtY';
-  // "ent": ["user:default/user1"]
-  const tokenUserEnt =
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJlbnQiOlsidXNlcjpkZWZhdWx0L3VzZXIxIl19.CMCxjwI4rj_TD3uUoBNgFjkZI23LwRTbQnSPBxzncoY';
-  // "ent": ["user:default/user1", "group:default/group1"]
-  const tokenUserAndGroupEnt =
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJlbnQiOlsidXNlcjpkZWZhdWx0L3VzZXIxIiwiZ3JvdXA6ZGVmYXVsdC9ncm91cDEiXX0.ZZmZrogbQKx0hnForw63ETkyAhUyeoBE8Hgloi45rdg';
-
   afterEach(() => {
     jest.resetAllMocks();
   });
 
   describe('loadIdentityOwnerRefs', () => {
-    it('returns the user id when there is no relevant token info', async () => {
-      mockIdentityApi.getUserId.mockReturnValueOnce('foo');
-      mockIdentityApi.getIdToken.mockResolvedValueOnce(undefined);
-      await expect(loadIdentityOwnerRefs(identityApi)).resolves.toEqual([
-        'user:default/foo',
-      ]);
-
-      mockIdentityApi.getUserId.mockReturnValueOnce('ns/foo');
-      mockIdentityApi.getIdToken.mockResolvedValueOnce(undefined);
-      await expect(loadIdentityOwnerRefs(identityApi)).resolves.toEqual([
-        'user:ns/foo',
-      ]);
-
-      mockIdentityApi.getUserId.mockReturnValueOnce('user:ns/foo');
-      mockIdentityApi.getIdToken.mockResolvedValueOnce(undefined);
-      await expect(loadIdentityOwnerRefs(identityApi)).resolves.toEqual([
-        'user:ns/foo',
-      ]);
-
-      mockIdentityApi.getUserId.mockReturnValueOnce('foo');
-      mockIdentityApi.getIdToken.mockResolvedValueOnce(tokenNoEnt);
-      await expect(loadIdentityOwnerRefs(identityApi)).resolves.toEqual([
-        'user:default/foo',
-      ]);
-
-      mockIdentityApi.getUserId.mockReturnValueOnce('foo');
-      mockIdentityApi.getIdToken.mockResolvedValueOnce(tokenEmptyEnt);
-      await expect(loadIdentityOwnerRefs(identityApi)).resolves.toEqual([
-        'user:default/foo',
-      ]);
-    });
-
-    it('returns both the user id and the token parts', async () => {
-      mockIdentityApi.getUserId.mockReturnValueOnce('foo');
-      mockIdentityApi.getIdToken.mockResolvedValueOnce(tokenUserEnt);
-      await expect(loadIdentityOwnerRefs(identityApi)).resolves.toEqual([
-        'user:default/foo',
-        'user:default/user1',
-      ]);
-
-      mockIdentityApi.getUserId.mockReturnValueOnce('foo');
-      mockIdentityApi.getIdToken.mockResolvedValueOnce(tokenUserAndGroupEnt);
-      await expect(loadIdentityOwnerRefs(identityApi)).resolves.toEqual([
-        'user:default/foo',
-        'user:default/user1',
-        'group:default/group1',
-      ]);
-    });
-
-    it('gracefully ignores broken token', async () => {
-      mockIdentityApi.getUserId.mockReturnValueOnce('foo');
-      mockIdentityApi.getIdToken.mockResolvedValueOnce('not a jwt');
-      await expect(loadIdentityOwnerRefs(identityApi)).resolves.toEqual([
-        'user:default/foo',
-      ]);
+    it('passes through the ownershipEntityRefs', async () => {
+      const refs = new Array<string>();
+      mockIdentityApi.getBackstageIdentity.mockResolvedValueOnce({
+        type: 'user',
+        userEntityRef: 'user:default/guest',
+        ownershipEntityRefs: refs,
+      });
+      await expect(loadIdentityOwnerRefs(identityApi)).resolves.toBe(refs);
     });
   });
 
@@ -204,9 +140,12 @@ describe('useEntityOwnership', () => {
   });
 
   describe('useEntityOwnership', () => {
-    it('matches ownership via token claims', async () => {
-      mockIdentityApi.getUserId.mockReturnValue('foo');
-      mockIdentityApi.getIdToken.mockResolvedValue(tokenUserAndGroupEnt);
+    it('matches ownership via ownership entity refs', async () => {
+      mockIdentityApi.getBackstageIdentity.mockResolvedValue({
+        type: 'user',
+        userEntityRef: 'user:default/user1',
+        ownershipEntityRefs: ['user:default/user1', 'group:default/group1'],
+      });
       mockCatalogApi.getEntityByName.mockResolvedValue(undefined);
 
       const { result, waitForValueToChange } = renderHook(
@@ -223,33 +162,6 @@ describe('useEntityOwnership', () => {
 
       expect(result.current.loading).toBe(false);
       expect(result.current.isOwnedEntity(ownedEntity)).toBe(true);
-    });
-
-    it('matches ownership via catalog user entity', async () => {
-      mockIdentityApi.getUserId.mockReturnValue('user2');
-      mockIdentityApi.getIdToken.mockResolvedValue(undefined);
-      mockCatalogApi.getEntityByName.mockResolvedValue(user2Entity);
-
-      const { result, waitForValueToChange } = renderHook(
-        () => useEntityOwnership(),
-        {
-          wrapper: Wrapper,
-        },
-      );
-
-      expect(result.current.loading).toBe(true);
-      expect(result.current.isOwnedEntity(ownedEntity)).toBe(false);
-
-      await waitForValueToChange(() => result.current.loading);
-
-      expect(result.current.loading).toBe(false);
-      expect(result.current.isOwnedEntity(ownedEntity)).toBe(true);
-
-      expect(mockCatalogApi.getEntityByName).toBeCalledWith({
-        kind: 'user',
-        namespace: 'default',
-        name: 'user2',
-      });
     });
   });
 });

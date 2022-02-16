@@ -14,26 +14,35 @@
  * limitations under the License.
  */
 
-import { spawn } from 'child_process';
+import { SpawnOptionsWithoutStdio, spawn } from 'child_process';
 import { PassThrough, Writable } from 'stream';
-import globby from 'globby';
 import { Logger } from 'winston';
 import { Git } from '@backstage/backend-common';
-import { Octokit } from '@octokit/rest';
+import { Octokit } from 'octokit';
+import { assertError } from '@backstage/errors';
 
 export type RunCommandOptions = {
+  /** command to run */
   command: string;
+  /** arguments to pass the command */
   args: string[];
+  /** options to pass to spawn */
+  options?: SpawnOptionsWithoutStdio;
+  /** stream to capture stdout and stderr output */
   logStream?: Writable;
 };
 
+/**
+ * Run a command in a sub-process, normally a shell command.
+ */
 export const runCommand = async ({
   command,
   args,
   logStream = new PassThrough(),
+  options,
 }: RunCommandOptions) => {
   await new Promise<void>((resolve, reject) => {
-    const process = spawn(command, args);
+    const process = spawn(command, args, options);
 
     process.stdout.on('data', stream => {
       logStream.write(stream);
@@ -49,7 +58,9 @@ export const runCommand = async ({
 
     process.on('close', code => {
       if (code !== 0) {
-        return reject(`Command ${command} failed, exit code: ${code}`);
+        return reject(
+          new Error(`Command ${command} failed, exit code: ${code}`),
+        );
       }
       return resolve();
     });
@@ -84,15 +95,7 @@ export async function initRepoAndPush({
     defaultBranch,
   });
 
-  const paths = await globby(['./**', './**/.*', '!.git'], {
-    cwd: dir,
-    gitignore: true,
-    dot: true,
-  });
-
-  for (const filepath of paths) {
-    await git.add({ dir, filepath });
-  }
+  await git.add({ dir, filepath: '.' });
 
   // use provided info if possible, otherwise use fallbacks
   const authorInfo = {
@@ -124,6 +127,7 @@ type BranchProtectionOptions = {
   owner: string;
   repoName: string;
   logger: Logger;
+  requireCodeOwnerReviews: boolean;
   defaultBranch?: string;
 };
 
@@ -132,11 +136,12 @@ export const enableBranchProtectionOnDefaultRepoBranch = async ({
   client,
   owner,
   logger,
+  requireCodeOwnerReviews,
   defaultBranch = 'master',
 }: BranchProtectionOptions): Promise<void> => {
   const tryOnce = async () => {
     try {
-      await client.repos.updateBranchProtection({
+      await client.rest.repos.updateBranchProtection({
         mediaType: {
           /**
            * 👇 we need this preview because allowing a custom
@@ -153,9 +158,13 @@ export const enableBranchProtectionOnDefaultRepoBranch = async ({
         required_status_checks: { strict: true, contexts: [] },
         restrictions: null,
         enforce_admins: true,
-        required_pull_request_reviews: { required_approving_review_count: 1 },
+        required_pull_request_reviews: {
+          required_approving_review_count: 1,
+          require_code_owner_reviews: requireCodeOwnerReviews,
+        },
       });
     } catch (e) {
+      assertError(e);
       if (
         e.message.includes(
           'Upgrade to GitHub Pro or make this repository public to enable this feature',

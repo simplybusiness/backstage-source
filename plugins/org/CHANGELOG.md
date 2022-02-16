@@ -1,5 +1,254 @@
 # @backstage/plugin-org
 
+## 0.4.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.8.8
+  - @backstage/plugin-catalog-react@0.6.14
+
+## 0.4.2-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.8.8-next.0
+  - @backstage/plugin-catalog-react@0.6.14-next.0
+
+## 0.4.1
+
+### Patch Changes
+
+- ef86143c16: Added `relations.memberof` filter to the catalog api call in `MemberListCard` to avoid fetching all the User entity kinds from catalog-backend.
+- 64cbca7839: The description from `metadata.description` will now show as the `subheader` on the UserProfileCard in the same way as the GroupProfileCard
+- Updated dependencies
+  - @backstage/core-components@0.8.7
+  - @backstage/plugin-catalog-react@0.6.13
+
+## 0.4.1-next.0
+
+### Patch Changes
+
+- ef86143c16: Added `relations.memberof` filter to the catalog api call in `MemberListCard` to avoid fetching all the User entity kinds from catalog-backend.
+- Updated dependencies
+  - @backstage/core-components@0.8.7-next.0
+  - @backstage/plugin-catalog-react@0.6.13-next.0
+
+## 0.4.0
+
+### Minor Changes
+
+- 1285c2fe60: **BREAKING**: Added a new and required `catalogIndex` external route. It should typically be linked to the `catalogIndex` route of the Catalog plugin:
+
+  ```ts
+  bind(orgPlugin.externalRoutes, {
+    catalogIndex: catalogPlugin.routes.catalogIndex,
+  });
+  ```
+
+### Patch Changes
+
+- f006fe2529: For the component `EntityMembersListCard` you can now specify the pageSize. For example:
+
+  ```tsx
+  <Grid item xs={12}>
+    <EntityMembersListCard pageSize={100} />
+  </Grid>
+  ```
+
+  If left empty it will by default use 50.
+
+- 2908a41b9b: Fixed typo in `MembersListCard` component
+- Updated dependencies
+  - @backstage/core-components@0.8.5
+  - @backstage/core-plugin-api@0.6.0
+  - @backstage/plugin-catalog-react@0.6.12
+  - @backstage/catalog-model@0.9.10
+
+## 0.3.35-next.0
+
+### Patch Changes
+
+- f006fe2529: For the component `EntityMembersListCard` you can now specify the pageSize. For example:
+
+  ```tsx
+  <Grid item xs={12}>
+    <EntityMembersListCard pageSize={100} />
+  </Grid>
+  ```
+
+  If left empty it will by default use 50.
+
+- 2908a41b9b: Fixed typo in `MembersListCard` component
+- Updated dependencies
+  - @backstage/core-components@0.8.5-next.0
+  - @backstage/core-plugin-api@0.6.0-next.0
+  - @backstage/plugin-catalog-react@0.6.12-next.0
+  - @backstage/catalog-model@0.9.10-next.0
+
+## 0.3.34
+
+### Patch Changes
+
+- 3f08dcd696: For the component `EntityMembersListCard` you can now specify the type of members you have in a group. For example:
+
+  ```tsx
+  <Grid item xs={12}>
+    <EntityMembersListCard memberDisplayTitle="Ninja's" />
+  </Grid>
+  ```
+
+  If left empty it will by default use 'Members'.
+
+- Updated dependencies
+  - @backstage/core-components@0.8.4
+  - @backstage/core-plugin-api@0.5.0
+  - @backstage/plugin-catalog-react@0.6.11
+  - @backstage/catalog-model@0.9.9
+
+## 0.3.33
+
+### Patch Changes
+
+- 4ce51ab0f1: Internal refactor of the `react-use` imports to use `react-use/lib/*` instead.
+- Updated dependencies
+  - @backstage/core-plugin-api@0.4.1
+  - @backstage/plugin-catalog-react@0.6.10
+  - @backstage/core-components@0.8.3
+
+## 0.3.32
+
+### Patch Changes
+
+- 6f263c2cbc: Fixed bug in OwnershipCard component where text wasn't correctly pluralized
+- 7a4bd2ceac: Prefer using `Link` from `@backstage/core-components` rather than material-UI.
+- Updated dependencies
+  - @backstage/core-plugin-api@0.4.0
+  - @backstage/plugin-catalog-react@0.6.8
+  - @backstage/core-components@0.8.2
+
+## 0.3.31
+
+### Patch Changes
+
+- fe86adbcd2: Added `entityFilterKind` property for `EntityOwnershipCard`
+- Updated dependencies
+  - @backstage/core-plugin-api@0.3.1
+  - @backstage/core-components@0.8.1
+  - @backstage/catalog-model@0.9.8
+  - @backstage/plugin-catalog-react@0.6.7
+
+## 0.3.30
+
+### Patch Changes
+
+- cd450844f6: Moved React dependencies to `peerDependencies` and allow both React v16 and v17 to be used.
+- Updated dependencies
+  - @backstage/core-components@0.8.0
+  - @backstage/core-plugin-api@0.3.0
+  - @backstage/plugin-catalog-react@0.6.5
+
+## 0.3.29
+
+### Patch Changes
+
+- 2f4a686411: Use email links in the catalog's members list instead of text to display a member's email
+- Updated dependencies
+  - @backstage/core-plugin-api@0.2.1
+  - @backstage/core-components@0.7.5
+
+## 0.3.28
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/catalog-model@0.9.7
+  - @backstage/plugin-catalog-react@0.6.4
+  - @backstage/core-components@0.7.4
+  - @backstage/core-plugin-api@0.2.0
+
+## 0.3.27
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-catalog-react@0.6.0
+  - @backstage/core-components@0.7.0
+  - @backstage/theme@0.2.11
+
+## 0.3.26
+
+### Patch Changes
+
+- 614da39174: Change the OwnershipCard link on an user profile, including the user's groups on the filters.
+- 81a41ec249: Added a `name` key to all extensions in order to improve Analytics API metadata.
+- Updated dependencies
+  - @backstage/core-components@0.6.1
+  - @backstage/core-plugin-api@0.1.10
+  - @backstage/plugin-catalog-react@0.5.2
+  - @backstage/catalog-model@0.9.4
+
+## 0.3.25
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-plugin-api@0.1.9
+  - @backstage/core-components@0.6.0
+  - @backstage/plugin-catalog-react@0.5.1
+
+## 0.3.24
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.5.0
+  - @backstage/plugin-catalog-react@0.5.0
+  - @backstage/catalog-model@0.9.3
+
+## 0.3.23
+
+### Patch Changes
+
+- 9f1362dcc1: Upgrade `@material-ui/lab` to `4.0.0-alpha.57`.
+- Updated dependencies
+  - @backstage/core-components@0.4.2
+  - @backstage/plugin-catalog-react@0.4.6
+  - @backstage/core-plugin-api@0.1.8
+
+## 0.3.22
+
+### Patch Changes
+
+- 6ad8fe1a0: Make ownership card style customizable via custom `theme.getPageTheme()`.
+- 70718686f: Use correct `Link` in ownership card to avoid a full reload of the app while navigating.
+- Updated dependencies
+  - @backstage/core-components@0.4.1
+  - @backstage/catalog-model@0.9.2
+  - @backstage/core-plugin-api@0.1.7
+
+## 0.3.21
+
+### Patch Changes
+
+- c9927b1c7: Don't open a new tab when clicking on the ownership card.
+- 7e5f14dda: This change hides pagination counter of search tables and group members list when results fit in one page
+- ff304cfc3: Fix OwnershipCard links to support namespaced owners
+- Updated dependencies
+  - @backstage/plugin-catalog-react@0.4.5
+  - @backstage/core-components@0.4.0
+  - @backstage/catalog-model@0.9.1
+
+## 0.3.20
+
+### Patch Changes
+
+- a60143c37: Link group ownership boxes through filtered catalog page
+- Updated dependencies
+  - @backstage/plugin-catalog-react@0.4.4
+  - @backstage/core-components@0.3.3
+
 ## 0.3.19
 
 ### Patch Changes

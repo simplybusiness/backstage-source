@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import Auth0Icon from '@material-ui/icons/AcUnit';
 import { auth0AuthApiRef } from '@backstage/core-plugin-api';
 import { OAuth2 } from '../oauth2';
 import { OAuthApiCreateOptions } from '../types';
@@ -22,17 +21,41 @@ import { OAuthApiCreateOptions } from '../types';
 const DEFAULT_PROVIDER = {
   id: 'auth0',
   title: 'Auth0',
-  icon: Auth0Icon,
+  icon: () => null,
 };
 
-class Auth0Auth {
-  static create({
-    discoveryApi,
-    environment = 'development',
-    provider = DEFAULT_PROVIDER,
-    oauthRequestApi,
-    defaultScopes = ['openid', `email`, `profile`],
-  }: OAuthApiCreateOptions): typeof auth0AuthApiRef.T {
+/**
+ * Implements the OAuth flow to Auth0 products.
+ *
+ * @public
+ * @deprecated Use {@link OAuth2} instead
+ *
+ * @example
+ *
+ * ```ts
+ * OAuth2.create({
+ *   discoveryApi,
+ *   oauthRequestApi,
+ *   provider: {
+ *     id: 'auth0',
+ *     title: 'Auth0',
+ *     icon: () => null,
+ *   },
+ *   defaultScopes: ['openid', 'email', 'profile'],
+ *   environment: configApi.getOptionalString('auth.environment'),
+ * })
+ * ```
+ */
+export default class Auth0Auth {
+  static create(options: OAuthApiCreateOptions): typeof auth0AuthApiRef.T {
+    const {
+      discoveryApi,
+      environment = 'development',
+      provider = DEFAULT_PROVIDER,
+      oauthRequestApi,
+      defaultScopes = ['openid', `email`, `profile`],
+    } = options;
+
     return OAuth2.create({
       discoveryApi,
       oauthRequestApi,
@@ -42,5 +65,3 @@ class Auth0Auth {
     });
   }
 }
-
-export default Auth0Auth;

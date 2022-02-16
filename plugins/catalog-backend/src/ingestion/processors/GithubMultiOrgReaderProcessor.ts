@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,11 @@
 import { LocationSpec } from '@backstage/catalog-model';
 import { Config } from '@backstage/config';
 import {
+  DefaultGithubCredentialsProvider,
   GithubAppCredentialsMux,
   GithubCredentialsProvider,
   GitHubIntegrationConfig,
+  ScmIntegrationRegistry,
   ScmIntegrations,
 } from '@backstage/integration';
 import { graphql } from '@octokit/graphql';
@@ -41,11 +43,18 @@ import { buildOrgHierarchy } from './util/org';
  * Be aware that this processor may not be compatible with future org structures in the catalog.
  */
 export class GithubMultiOrgReaderProcessor implements CatalogProcessor {
-  private readonly integrations: ScmIntegrations;
+  private readonly integrations: ScmIntegrationRegistry;
   private readonly orgs: GithubMultiOrgConfig;
   private readonly logger: Logger;
+  private readonly githubCredentialsProvider: GithubCredentialsProvider;
 
-  static fromConfig(config: Config, options: { logger: Logger }) {
+  static fromConfig(
+    config: Config,
+    options: {
+      logger: Logger;
+      githubCredentialsProvider?: GithubCredentialsProvider;
+    },
+  ) {
     const c = config.getOptionalConfig('catalog.processors.githubMultiOrg');
     const integrations = ScmIntegrations.fromConfig(config);
 
@@ -57,13 +66,17 @@ export class GithubMultiOrgReaderProcessor implements CatalogProcessor {
   }
 
   constructor(options: {
-    integrations: ScmIntegrations;
+    integrations: ScmIntegrationRegistry;
     logger: Logger;
     orgs: GithubMultiOrgConfig;
+    githubCredentialsProvider?: GithubCredentialsProvider;
   }) {
     this.integrations = options.integrations;
     this.logger = options.logger;
     this.orgs = options.orgs;
+    this.githubCredentialsProvider =
+      options.githubCredentialsProvider ||
+      DefaultGithubCredentialsProvider.fromIntegrations(this.integrations);
   }
 
   async readLocation(
@@ -86,7 +99,6 @@ export class GithubMultiOrgReaderProcessor implements CatalogProcessor {
 
     const allUsersMap = new Map();
     const baseUrl = new URL(location.target).origin;
-    const credentialsProvider = GithubCredentialsProvider.create(gitHubConfig);
 
     const orgsToProcess = this.orgs.length
       ? this.orgs
@@ -95,7 +107,7 @@ export class GithubMultiOrgReaderProcessor implements CatalogProcessor {
     for (const orgConfig of orgsToProcess) {
       try {
         const { headers, type: tokenType } =
-          await credentialsProvider.getCredentials({
+          await this.githubCredentialsProvider.getCredentials({
             url: `${baseUrl}/${orgConfig.name}`,
           });
         const client = graphql.defaults({
@@ -111,6 +123,7 @@ export class GithubMultiOrgReaderProcessor implements CatalogProcessor {
           client,
           orgConfig.name,
           tokenType,
+          orgConfig.userNamespace,
         );
         const { groups, groupMemberUsers } = await getOrganizationTeams(
           client,
@@ -123,15 +136,18 @@ export class GithubMultiOrgReaderProcessor implements CatalogProcessor {
           `Read ${users.length} GitHub users and ${groups.length} GitHub teams from ${orgConfig.name} in ${duration} seconds`,
         );
 
+        let prefix: string = orgConfig.userNamespace ?? '';
+        if (prefix.length > 0) prefix += '/';
+
         users.forEach(u => {
-          if (!allUsersMap.has(u.metadata.name)) {
-            allUsersMap.set(u.metadata.name, u);
+          if (!allUsersMap.has(prefix + u.metadata.name)) {
+            allUsersMap.set(prefix + u.metadata.name, u);
           }
         });
 
         for (const [groupName, userNames] of groupMemberUsers.entries()) {
           for (const userName of userNames) {
-            const user = allUsersMap.get(userName);
+            const user = allUsersMap.get(prefix + userName);
             if (user && !user.spec.memberOf.includes(groupName)) {
               user.spec.memberOf.push(groupName);
             }

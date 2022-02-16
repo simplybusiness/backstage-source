@@ -14,23 +14,8 @@
  * limitations under the License.
  */
 
-import React, { PropsWithChildren } from 'react';
-import qs from 'qs';
-import { MemoryRouter as Router } from 'react-router-dom';
-import { act, renderHook } from '@testing-library/react-hooks';
-import { MockStorageApi } from '@backstage/test-utils';
 import { CatalogApi } from '@backstage/catalog-client';
 import { Entity } from '@backstage/catalog-model';
-import {
-  EntityListProvider,
-  useEntityListProvider,
-} from './useEntityListProvider';
-import { catalogApiRef } from '../api';
-import { UserListFilterKind } from '../types';
-import { EntityKindFilter, EntityTypeFilter, UserListFilter } from '../filters';
-import { EntityKindPicker, UserListPicker } from '../components';
-
-import { ApiProvider, ApiRegistry } from '@backstage/core-app-api';
 import {
   ConfigApi,
   configApiRef,
@@ -38,6 +23,20 @@ import {
   identityApiRef,
   storageApiRef,
 } from '@backstage/core-plugin-api';
+import { MockStorageApi, TestApiProvider } from '@backstage/test-utils';
+import { act, renderHook } from '@testing-library/react-hooks';
+import qs from 'qs';
+import React, { PropsWithChildren } from 'react';
+import { MemoryRouter } from 'react-router';
+import { catalogApiRef } from '../api';
+import { DefaultStarredEntitiesApi, starredEntitiesApiRef } from '../apis';
+import { EntityKindPicker, UserListPicker } from '../components';
+import { EntityKindFilter, EntityTypeFilter, UserListFilter } from '../filters';
+import { UserListFilterKind } from '../types';
+import {
+  EntityListProvider,
+  useEntityListProvider,
+} from './useEntityListProvider';
 
 const entities: Entity[] = [
   {
@@ -70,42 +69,61 @@ const mockConfigApi = {
   getOptionalString: () => '',
 } as Partial<ConfigApi>;
 const mockIdentityApi: Partial<IdentityApi> = {
-  getUserId: () => 'guest',
-  getIdToken: async () => undefined,
+  getBackstageIdentity: async () => ({
+    type: 'user',
+    userEntityRef: 'user:default/guest',
+    ownershipEntityRefs: [],
+  }),
+  getCredentials: async () => ({ token: undefined }),
 };
 const mockCatalogApi: Partial<CatalogApi> = {
   getEntities: jest.fn().mockImplementation(async () => ({ items: entities })),
   getEntityByName: async () => undefined,
 };
-const apis = ApiRegistry.from([
-  [configApiRef, mockConfigApi],
-  [catalogApiRef, mockCatalogApi],
-  [identityApiRef, mockIdentityApi],
-  [storageApiRef, MockStorageApi.create()],
-]);
 
 const wrapper = ({
   userFilter,
-  queryParams,
+  location,
   children,
 }: PropsWithChildren<{
   userFilter?: UserListFilterKind;
-  queryParams?: string;
+  location?: string;
 }>) => {
   return (
-    <Router initialEntries={[`/?${queryParams ?? ''}`]}>
-      <ApiProvider apis={apis}>
+    <MemoryRouter initialEntries={[location ?? '']}>
+      <TestApiProvider
+        apis={[
+          [configApiRef, mockConfigApi],
+          [catalogApiRef, mockCatalogApi],
+          [identityApiRef, mockIdentityApi],
+          [storageApiRef, MockStorageApi.create()],
+          [
+            starredEntitiesApiRef,
+            new DefaultStarredEntitiesApi({
+              storageApi: MockStorageApi.create(),
+            }),
+          ],
+        ]}
+      >
         <EntityListProvider>
           <EntityKindPicker initialFilter="component" hidden />
           <UserListPicker initialFilter={userFilter} />
           {children}
         </EntityListProvider>
-      </ApiProvider>
-    </Router>
+      </TestApiProvider>
+    </MemoryRouter>
   );
 };
 
 describe('<EntityListProvider />', () => {
+  const origReplaceState = window.history.replaceState;
+  beforeEach(() => {
+    window.history.replaceState = jest.fn();
+  });
+  afterEach(() => {
+    window.history.replaceState = origReplaceState;
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -128,24 +146,37 @@ describe('<EntityListProvider />', () => {
     const { result, waitFor } = renderHook(() => useEntityListProvider(), {
       wrapper,
       initialProps: {
-        userFilter: 'owned',
+        userFilter: 'all',
       },
     });
     await waitFor(() => !!result.current.entities.length);
     expect(result.current.backendEntities.length).toBe(2);
-    expect(result.current.entities.length).toBe(1);
+
+    act(() =>
+      result.current.updateFilters({
+        user: new UserListFilter(
+          'owned',
+          entity => entity.metadata.name === 'component-1',
+          () => true,
+        ),
+      }),
+    );
+
+    await waitFor(() => {
+      expect(result.current.backendEntities.length).toBe(2);
+      expect(result.current.entities.length).toBe(1);
+      expect(mockCatalogApi.getEntities).toHaveBeenCalledTimes(1);
+    });
   });
 
   it('resolves query param filter values', async () => {
+    const query = qs.stringify({
+      filters: { kind: 'component', type: 'service' },
+    });
     const { result, waitFor } = renderHook(() => useEntityListProvider(), {
       wrapper,
       initialProps: {
-        queryParams: qs.stringify({
-          filters: {
-            kind: 'component',
-            type: 'service',
-          },
-        }),
+        location: `/catalog?${query}`,
       },
     });
     await waitFor(() => !!result.current.queryParameters);

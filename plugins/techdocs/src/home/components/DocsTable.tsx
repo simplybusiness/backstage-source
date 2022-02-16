@@ -15,9 +15,9 @@
  */
 
 import React from 'react';
-import { useCopyToClipboard } from 'react-use';
-import { generatePath } from 'react-router-dom';
+import useCopyToClipboard from 'react-use/lib/useCopyToClipboard';
 
+import { useRouteRef, useApi, configApiRef } from '@backstage/core-plugin-api';
 import { Entity, RELATION_OWNED_BY } from '@backstage/catalog-model';
 import {
   formatEntityRefTitle,
@@ -34,6 +34,7 @@ import {
 import * as actionFactories from './actions';
 import * as columnFactories from './columns';
 import { DocsTableRow } from './types';
+import { toLowerMaybe } from '../../helpers';
 
 export const DocsTable = ({
   entities,
@@ -49,19 +50,22 @@ export const DocsTable = ({
   actions?: TableProps<DocsTableRow>['actions'];
 }) => {
   const [, copyToClipboard] = useCopyToClipboard();
-
+  const getRouteToReaderPageFor = useRouteRef(rootDocsRouteRef);
+  const config = useApi(configApiRef);
   if (!entities) return null;
 
   const documents = entities.map(entity => {
     const ownedByRelations = getEntityRelations(entity, RELATION_OWNED_BY);
-
     return {
       entity,
       resolved: {
-        docsUrl: generatePath(rootDocsRouteRef.path, {
-          namespace: entity.metadata.namespace ?? 'default',
-          kind: entity.kind,
-          name: entity.metadata.name,
+        docsUrl: getRouteToReaderPageFor({
+          namespace: toLowerMaybe(
+            entity.metadata.namespace ?? 'default',
+            config,
+          ),
+          kind: toLowerMaybe(entity.kind, config),
+          name: toLowerMaybe(entity.metadata.name, config),
         }),
         ownedByRelations,
         ownedByRelationsTitle: ownedByRelations

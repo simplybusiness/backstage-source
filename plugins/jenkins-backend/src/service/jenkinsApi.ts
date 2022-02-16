@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import { JenkinsInfo } from './jenkinsInfoProvider';
 import jenkins from 'jenkins';
 import {
@@ -146,13 +147,17 @@ export class JenkinsApiImpl {
       baseUrl: jenkinsInfo.baseUrl,
       headers: jenkinsInfo.headers,
       promisify: true,
+      crumbIssuer: jenkinsInfo.crumbIssuer,
     }) as any;
   }
 
   private augmentProject(project: JenkinsProject): BackstageProject {
     let status: string;
+
     if (project.inQueue) {
       status = 'queued';
+    } else if (!project.lastBuild) {
+      status = 'build not found';
     } else if (project.lastBuild.building) {
       status = 'running';
     } else if (!project.lastBuild.result) {
@@ -165,7 +170,9 @@ export class JenkinsApiImpl {
 
     return {
       ...project,
-      lastBuild: this.augmentBuild(project.lastBuild, jobScmInfo),
+      lastBuild: project.lastBuild
+        ? this.augmentBuild(project.lastBuild, jobScmInfo)
+        : null,
       status,
       // actions: undefined,
     };

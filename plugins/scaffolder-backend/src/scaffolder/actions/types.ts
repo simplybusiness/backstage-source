@@ -16,14 +16,11 @@
 
 import { Logger } from 'winston';
 import { Writable } from 'stream';
-import { JsonValue, JsonObject } from '@backstage/config';
+import { JsonValue, JsonObject } from '@backstage/types';
 import { Schema } from 'jsonschema';
+import { TaskSecrets, TemplateMetadata } from '../tasks/types';
 
-type PartialJsonObject = Partial<JsonObject>;
-type PartialJsonValue = PartialJsonObject | JsonValue | undefined;
-export type InputBase = Partial<{ [name: string]: PartialJsonValue }>;
-
-export type ActionContext<Input extends InputBase> = {
+export type ActionContext<Input extends JsonObject> = {
   /**
    * Base URL for the location of the task spec, typically the url of the source entity file.
    */
@@ -34,8 +31,10 @@ export type ActionContext<Input extends InputBase> = {
 
   /**
    * User token forwarded from initial request, for use in subsequent api requests
+   * @deprecated use `secrets.backstageToken` instead
    */
   token?: string | undefined;
+  secrets?: TaskSecrets;
   workspacePath: string;
   input: Input;
   output(name: string, value: JsonValue): void;
@@ -44,9 +43,11 @@ export type ActionContext<Input extends InputBase> = {
    * Creates a temporary directory for use by the action, which is then cleaned up automatically.
    */
   createTemporaryDirectory(): Promise<string>;
+
+  metadata?: TemplateMetadata;
 };
 
-export type TemplateAction<Input extends InputBase> = {
+export type TemplateAction<Input extends JsonObject> = {
   id: string;
   description?: string;
   schema?: {

@@ -28,6 +28,7 @@ import {
   createPlugin,
   createRoutableExtension,
   discoveryApiRef,
+  fetchApiRef,
   identityApiRef,
 } from '@backstage/core-plugin-api';
 
@@ -40,12 +41,14 @@ export const techdocsPlugin = createPlugin({
         configApi: configApiRef,
         discoveryApi: discoveryApiRef,
         identityApi: identityApiRef,
+        fetchApi: fetchApiRef,
       },
-      factory: ({ configApi, discoveryApi, identityApi }) =>
+      factory: ({ configApi, discoveryApi, identityApi, fetchApi }) =>
         new TechDocsStorageClient({
           configApi,
           discoveryApi,
           identityApi,
+          fetchApi,
         }),
     }),
     createApiFactory({
@@ -53,24 +56,26 @@ export const techdocsPlugin = createPlugin({
       deps: {
         configApi: configApiRef,
         discoveryApi: discoveryApiRef,
-        identityApi: identityApiRef,
+        fetchApi: fetchApiRef,
       },
-      factory: ({ configApi, discoveryApi, identityApi }) =>
+      factory: ({ configApi, discoveryApi, fetchApi }) =>
         new TechDocsClient({
           configApi,
           discoveryApi,
-          identityApi,
+          fetchApi,
         }),
     }),
   ],
   routes: {
     root: rootRouteRef,
+    docRoot: rootDocsRouteRef,
     entityContent: rootCatalogDocsRouteRef,
   },
 });
 
 export const TechdocsPage = techdocsPlugin.provide(
   createRoutableExtension({
+    name: 'TechdocsPage',
     component: () => import('./Router').then(m => m.Router),
     mountPoint: rootRouteRef,
   }),
@@ -78,6 +83,7 @@ export const TechdocsPage = techdocsPlugin.provide(
 
 export const EntityTechdocsContent = techdocsPlugin.provide(
   createRoutableExtension({
+    name: 'EntityTechdocsContent',
     component: () => import('./Router').then(m => m.EmbeddedDocsRouter),
     mountPoint: rootCatalogDocsRouteRef,
   }),
@@ -86,6 +92,7 @@ export const EntityTechdocsContent = techdocsPlugin.provide(
 // takes a list of entities and renders documentation cards
 export const DocsCardGrid = techdocsPlugin.provide(
   createComponentExtension({
+    name: 'DocsCardGrid',
     component: {
       lazy: () =>
         import('./home/components/DocsCardGrid').then(m => m.DocsCardGrid),
@@ -96,6 +103,7 @@ export const DocsCardGrid = techdocsPlugin.provide(
 // takes a list of entities and renders table listing documentation
 export const DocsTable = techdocsPlugin.provide(
   createComponentExtension({
+    name: 'DocsTable',
     component: {
       lazy: () => import('./home/components/DocsTable').then(m => m.DocsTable),
     },
@@ -105,6 +113,7 @@ export const DocsTable = techdocsPlugin.provide(
 // takes a custom tabs config object and renders a documentation landing page
 export const TechDocsCustomHome = techdocsPlugin.provide(
   createRoutableExtension({
+    name: 'TechDocsCustomHome',
     component: () =>
       import('./home/components/TechDocsCustomHome').then(
         m => m.TechDocsCustomHome,
@@ -115,6 +124,7 @@ export const TechDocsCustomHome = techdocsPlugin.provide(
 
 export const TechDocsIndexPage = techdocsPlugin.provide(
   createRoutableExtension({
+    name: 'TechDocsIndexPage',
     component: () =>
       import('./home/components/TechDocsIndexPage').then(
         m => m.TechDocsIndexPage,
@@ -125,6 +135,7 @@ export const TechDocsIndexPage = techdocsPlugin.provide(
 
 export const TechDocsReaderPage = techdocsPlugin.provide(
   createRoutableExtension({
+    name: 'TechDocsReaderPage',
     component: () =>
       import('./reader/components/TechDocsPage').then(m => m.TechDocsPage),
     mountPoint: rootDocsRouteRef,

@@ -14,64 +14,157 @@
  * limitations under the License.
  */
 
-import { Entity, EntityName, Location } from '@backstage/catalog-model';
+import { Entity, EntityName, LocationSpec } from '@backstage/catalog-model';
 
-export const CATALOG_FILTER_EXISTS = Symbol('CATALOG_FILTER_EXISTS');
+/**
+ * This symbol can be used in place of a value when passed to filters in e.g.
+ * {@link CatalogClient.getEntities}, to signify that you want to filter on the
+ * presence of that key no matter what its value is.
+ *
+ * @public
+ */
+export const CATALOG_FILTER_EXISTS = Symbol.for(
+  // Random UUID to ensure no collisions
+  'CATALOG_FILTER_EXISTS_0e15b590c0b343a2bae3e787e84c2111',
+);
 
-export type CatalogEntitiesRequest = {
+/**
+ * The request type for {@link CatalogClient.getEntities}.
+ *
+ * @public
+ */
+export interface GetEntitiesRequest {
+  /**
+   * If given, return only entities that match the given patterns.
+   *
+   * @remarks
+   *
+   * If multiple filter sets are given as an array, then there is effectively an
+   * OR between each filter set.
+   *
+   * Within one filter set, there is effectively an AND between the various
+   * keys.
+   *
+   * Within one key, if there are more than one value, then there is effectively
+   * an OR between them.
+   *
+   * Example: For an input of
+   *
+   * ```
+   * [
+   *   { kind: ['API', 'Component'] },
+   *   { 'metadata.name': 'a', 'metadata.namespace': 'b' }
+   * ]
+   * ```
+   *
+   * This effectively means
+   *
+   * ```
+   * (kind = EITHER 'API' OR 'Component')
+   * OR
+   * (metadata.name = 'a' AND metadata.namespace = 'b' )
+   * ```
+   *
+   * Each key is a dot separated path in each object.
+   *
+   * As a value you can also pass in the symbol `CATALOG_FILTER_EXISTS`
+   * (exported from this package), which means that you assert on the existence
+   * of that key, no matter what its value is.
+   */
   filter?:
     | Record<string, string | symbol | (string | symbol)[]>[]
     | Record<string, string | symbol | (string | symbol)[]>
     | undefined;
+  /**
+   * If given, return only the parts of each entity that match those dot
+   * separated paths in each object.
+   *
+   * @remarks
+   *
+   * Example: For an input of `['kind', 'metadata.annotations']`, then response
+   * objects will be shaped like
+   *
+   * ```
+   * {
+   *   "kind": "Component",
+   *   "metadata": {
+   *     "annotations": {
+   *       "foo": "bar"
+   *     }
+   *   }
+   * }
+   * ```
+   */
   fields?: string[] | undefined;
-};
-
-export type CatalogListResponse<T> = {
-  items: T[];
-};
-
-export type CatalogRequestOptions = {
-  token?: string;
-};
-
-export interface CatalogApi {
-  // Entities
-  getEntities(
-    request?: CatalogEntitiesRequest,
-    options?: CatalogRequestOptions,
-  ): Promise<CatalogListResponse<Entity>>;
-  getEntityByName(
-    name: EntityName,
-    options?: CatalogRequestOptions,
-  ): Promise<Entity | undefined>;
-  removeEntityByUid(
-    uid: string,
-    options?: CatalogRequestOptions,
-  ): Promise<void>;
-
-  // Locations
-  getLocationById(
-    id: string,
-    options?: CatalogRequestOptions,
-  ): Promise<Location | undefined>;
-  getOriginLocationByEntity(
-    entity: Entity,
-    options?: CatalogRequestOptions,
-  ): Promise<Location | undefined>;
-  getLocationByEntity(
-    entity: Entity,
-    options?: CatalogRequestOptions,
-  ): Promise<Location | undefined>;
-  addLocation(
-    location: AddLocationRequest,
-    options?: CatalogRequestOptions,
-  ): Promise<AddLocationResponse>;
-  removeLocationById(
-    id: string,
-    options?: CatalogRequestOptions,
-  ): Promise<void>;
+  /**
+   * If given, skips over the first N items in the result set.
+   */
+  offset?: number;
+  /**
+   * If given, returns at most N items from the result set.
+   */
+  limit?: number;
+  /**
+   * If given, skips over all items before that cursor as returned by a previous
+   * request.
+   */
+  after?: string;
 }
 
+/**
+ * The response type for {@link CatalogClient.getEntities}.
+ *
+ * @public
+ */
+export interface GetEntitiesResponse {
+  items: Entity[];
+}
+
+/**
+ * The request type for {@link CatalogClient.getEntityAncestors}.
+ *
+ * @public
+ */
+export interface GetEntityAncestorsRequest {
+  entityRef: string;
+}
+
+/**
+ * The response type for {@link CatalogClient.getEntityAncestors}.
+ *
+ * @public
+ */
+export interface GetEntityAncestorsResponse {
+  rootEntityRef: string;
+  items: Array<{
+    entity: Entity;
+    parentEntityRefs: string[];
+  }>;
+}
+
+/**
+ * Options you can pass into a catalog request for additional information.
+ *
+ * @public
+ */
+export interface CatalogRequestOptions {
+  token?: string;
+}
+
+/**
+ * Entity location for a specific entity.
+ *
+ * @public
+ */
+export type Location = {
+  id: string;
+} & LocationSpec;
+
+/**
+ * The request type for {@link CatalogClient.addLocation}.
+ *
+ * @public
+ */
 export type AddLocationRequest = {
   type?: string;
   target: string;
@@ -79,7 +172,136 @@ export type AddLocationRequest = {
   presence?: 'optional' | 'required';
 };
 
+/**
+ * The response type for {@link CatalogClient.addLocation}.
+ *
+ * @public
+ */
 export type AddLocationResponse = {
   location: Location;
   entities: Entity[];
+  // Only set in dryRun mode.
+  exists?: boolean;
 };
+
+/**
+ * A client for interacting with the Backstage software catalog through its API.
+ *
+ * @public
+ */
+export interface CatalogApi {
+  /**
+   * Lists catalog entities.
+   *
+   * @param request - Request parameters
+   * @param options - Additional options
+   */
+  getEntities(
+    request?: GetEntitiesRequest,
+    options?: CatalogRequestOptions,
+  ): Promise<GetEntitiesResponse>;
+
+  /**
+   * Gets entity ancestor information, i.e. the hierarchy of parent entities
+   * whose processing resulted in a given entity appearing in the catalog.
+   *
+   * @param request - Request parameters
+   * @param options - Additional options
+   */
+  getEntityAncestors(
+    request: GetEntityAncestorsRequest,
+    options?: CatalogRequestOptions,
+  ): Promise<GetEntityAncestorsResponse>;
+
+  /**
+   * Gets a single entity from the catalog by its ref (kind, namespace, name)
+   * triplet.
+   *
+   * @param name - A complete entity ref
+   * @param options - Additional options
+   */
+  getEntityByName(
+    name: EntityName,
+    options?: CatalogRequestOptions,
+  ): Promise<Entity | undefined>;
+
+  /**
+   * Removes a single entity from the catalog by entity UID.
+   *
+   * @param uid - An entity UID
+   * @param options - Additional options
+   */
+  removeEntityByUid(
+    uid: string,
+    options?: CatalogRequestOptions,
+  ): Promise<void>;
+
+  /**
+   * Refreshes (marks for reprocessing) an entity in the catalog.
+   *
+   * @param entityRef - An entity ref on string form (e.g.
+   *        'component/default:my-component')
+   * @param options - Additional options
+   */
+  refreshEntity(
+    entityRef: string,
+    options?: CatalogRequestOptions,
+  ): Promise<void>;
+
+  // Locations
+
+  /**
+   * Gets a registered location by its ID.
+   *
+   * @param id - A location ID
+   * @param options - Additional options
+   */
+  getLocationById(
+    id: string,
+    options?: CatalogRequestOptions,
+  ): Promise<Location | undefined>;
+
+  /**
+   * Gets origin location by Entity.
+   *
+   * @param entity - An {@link catalog-model#Entity}.
+   * @param options - Additional options
+   */
+  getOriginLocationByEntity(
+    entity: Entity,
+    options?: CatalogRequestOptions,
+  ): Promise<Location | undefined>;
+
+  /**
+   * Gets Location by Entity.
+   *
+   * @param entity - An {@link catalog-model#Entity}.
+   * @param options - Additional options
+   */
+  getLocationByEntity(
+    entity: Entity,
+    options?: CatalogRequestOptions,
+  ): Promise<Location | undefined>;
+
+  /**
+   * Registers a new location.
+   *
+   * @param location - Request parameters
+   * @param options - Additional options
+   */
+  addLocation(
+    location: AddLocationRequest,
+    options?: CatalogRequestOptions,
+  ): Promise<AddLocationResponse>;
+
+  /**
+   * Removes a registered Location by its ID.
+   *
+   * @param id - A location ID
+   * @param options - Additional options
+   */
+  removeLocationById(
+    id: string,
+    options?: CatalogRequestOptions,
+  ): Promise<void>;
+}

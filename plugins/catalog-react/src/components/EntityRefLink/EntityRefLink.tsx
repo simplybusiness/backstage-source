@@ -13,26 +13,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import {
   Entity,
   EntityName,
-  ENTITY_DEFAULT_NAMESPACE,
+  DEFAULT_NAMESPACE,
 } from '@backstage/catalog-model';
 import React, { forwardRef } from 'react';
-import { generatePath } from 'react-router';
-import { entityRoute } from '../../routes';
+import { entityRouteRef } from '../../routes';
 import { formatEntityRefTitle } from './format';
 import { Link, LinkProps } from '@backstage/core-components';
+import { useRouteRef } from '@backstage/core-plugin-api';
+import { Tooltip } from '@material-ui/core';
 
+/**
+ * Props for {@link EntityRefLink}.
+ *
+ * @public
+ */
 export type EntityRefLinkProps = {
   entityRef: Entity | EntityName;
   defaultKind?: string;
+  title?: string;
   children?: React.ReactNode;
 } & Omit<LinkProps, 'to'>;
 
+/**
+ * Shows a clickable link to an entity.
+ *
+ * @public
+ */
 export const EntityRefLink = forwardRef<any, EntityRefLinkProps>(
   (props, ref) => {
-    const { entityRef, defaultKind, children, ...linkProps } = props;
+    const { entityRef, defaultKind, title, children, ...linkProps } = props;
+    const entityRoute = useRouteRef(entityRouteRef);
 
     let kind;
     let namespace;
@@ -52,21 +66,24 @@ export const EntityRefLink = forwardRef<any, EntityRefLinkProps>(
 
     const routeParams = {
       kind,
-      namespace:
-        namespace?.toLocaleLowerCase('en-US') ?? ENTITY_DEFAULT_NAMESPACE,
+      namespace: namespace?.toLocaleLowerCase('en-US') ?? DEFAULT_NAMESPACE,
       name,
     };
+    const formattedEntityRefTitle = formatEntityRefTitle(entityRef, {
+      defaultKind,
+    });
 
-    // TODO: Use useRouteRef here to generate the path
-    return (
-      <Link
-        {...linkProps}
-        ref={ref}
-        to={generatePath(`/catalog/${entityRoute.path}`, routeParams)}
-      >
+    const link = (
+      <Link {...linkProps} ref={ref} to={entityRoute(routeParams)}>
         {children}
-        {!children && formatEntityRefTitle(entityRef, { defaultKind })}
+        {!children && (title ?? formattedEntityRefTitle)}
       </Link>
     );
+
+    return title ? (
+      <Tooltip title={formattedEntityRefTitle}>{link}</Tooltip>
+    ) : (
+      link
+    );
   },
-);
+) as (props: EntityRefLinkProps) => JSX.Element;

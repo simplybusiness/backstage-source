@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import {
   railsArgumentResolver,
   RailsRunOptions,
 } from './railsArgumentResolver';
-import { JsonObject } from '@backstage/config';
+import { JsonObject } from '@backstage/types';
 import { Writable } from 'stream';
 
 export class RailsNewRunner {

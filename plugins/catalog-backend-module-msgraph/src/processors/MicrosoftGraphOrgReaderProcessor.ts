@@ -34,6 +34,8 @@ import {
 
 /**
  * Extracts teams and users out of a the Microsoft Graph API.
+ *
+ * @public
  */
 export class MicrosoftGraphOrgReaderProcessor implements CatalogProcessor {
   private readonly providers: MicrosoftGraphProviderConfig[];
@@ -100,7 +102,9 @@ export class MicrosoftGraphOrgReaderProcessor implements CatalogProcessor {
       client,
       provider.tenantId,
       {
+        userExpand: provider.userExpand,
         userFilter: provider.userFilter,
+        userGroupMemberFilter: provider.userGroupMemberFilter,
         groupFilter: provider.groupFilter,
         userTransformer: this.userTransformer,
         groupTransformer: this.groupTransformer,

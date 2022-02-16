@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import { JenkinsApiImpl } from './jenkinsApi';
 import jenkins from 'jenkins';
 import { JenkinsInfo } from './jenkinsInfoProvider';
@@ -284,6 +285,15 @@ describe('JenkinsApi', () => {
         },
       };
 
+      const projectWithoutBuild: JenkinsProject = {
+        actions: [],
+        displayName: 'Example Build',
+        fullDisplayName: 'Example jobName » Example Build',
+        fullName: 'example-jobName/exampleBuild',
+        inQueue: false,
+        lastBuild: null,
+      };
+
       it('augments project', async () => {
         mockedJenkinsClient.job.get.mockResolvedValueOnce({
           jobs: [projectWithScmActions],
@@ -293,6 +303,16 @@ describe('JenkinsApi', () => {
 
         expect(result).toHaveLength(1);
         expect(result[0].status).toEqual('success');
+      });
+      it('augments project without build', async () => {
+        mockedJenkinsClient.job.get.mockResolvedValueOnce({
+          jobs: [projectWithoutBuild],
+        });
+
+        const result = await jenkinsApi.getProjects(jenkinsInfo);
+
+        expect(result).toHaveLength(1);
+        expect(result[0].status).toEqual('build not found');
       });
       it('augments  build', async () => {
         mockedJenkinsClient.job.get.mockResolvedValueOnce({
@@ -304,7 +324,7 @@ describe('JenkinsApi', () => {
         expect(result).toHaveLength(1);
         // TODO: I am really just asserting the previous behaviour wth no understanding here.
         // In my 2 Jenkins instances, 1 returns a lot of different and confusing BuildData sections and 1 returns none ☹️
-        expect(result[0].lastBuild.source).toEqual({
+        expect(result[0].lastBuild!.source).toEqual({
           branchName: 'master',
           commit: {
             hash: '14d31bde',
@@ -322,7 +342,7 @@ describe('JenkinsApi', () => {
         const result = await jenkinsApi.getProjects(jenkinsInfo);
 
         expect(result).toHaveLength(1);
-        expect(result[0].lastBuild.tests).toEqual({
+        expect(result[0].lastBuild!.tests).toEqual({
           total: 635,
           passed: 632,
           skipped: 1,
@@ -389,6 +409,19 @@ describe('JenkinsApi', () => {
       baseUrl: jenkinsInfo.baseUrl,
       headers: jenkinsInfo.headers,
       promisify: true,
+    });
+    expect(mockedJenkinsClient.job.build).toBeCalledWith(jobFullName);
+  });
+
+  it('buildProject with crumbIssuer option', async () => {
+    const info: JenkinsInfo = { ...jenkinsInfo, crumbIssuer: true };
+    await jenkinsApi.buildProject(info, jobFullName);
+
+    expect(mockedJenkins).toHaveBeenCalledWith({
+      baseUrl: jenkinsInfo.baseUrl,
+      headers: jenkinsInfo.headers,
+      promisify: true,
+      crumbIssuer: true,
     });
     expect(mockedJenkinsClient.job.build).toBeCalledWith(jobFullName);
   });

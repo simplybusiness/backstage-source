@@ -18,7 +18,11 @@ import { Entity, EntityName } from '@backstage/catalog-model';
 import { useReducer } from 'react';
 import { AnalyzeResult } from '../api';
 
-// the configuration of the stepper
+/**
+ * The configuration of the stepper.
+ *
+ * @public
+ */
 export type ImportFlows =
   | 'unknown'
   | 'single-location'
@@ -28,11 +32,16 @@ export type ImportFlows =
 // the available states of the stepper
 type ImportStateTypes = 'analyze' | 'prepare' | 'review' | 'finish';
 
-// result of the prepare state
+/**
+ * Result of the prepare state.
+ *
+ * @public
+ */
 export type PrepareResult =
   | {
       type: 'locations';
       locations: Array<{
+        exists?: boolean;
         target: string;
         entities: EntityName[];
       }>;
@@ -58,6 +67,7 @@ export type ReviewResult =
         target: string;
         entities: Entity[];
       }>;
+      refreshed: Array<{ target: string }>;
     }
   | {
       type: 'repository';
@@ -245,7 +255,7 @@ function reducer(state: ReducerState, action: ReducerActions): ReducerState {
  * 3. review
  * 4. finish
  *
- * @param options options
+ * @param options - options
  */
 export const useImportState = (options?: {
   initialUrl?: string;

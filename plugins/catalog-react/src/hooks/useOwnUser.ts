@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
-import { UserEntity } from '@backstage/catalog-model';
-import { useAsync } from 'react-use';
-import { AsyncState } from 'react-use/lib/useAsync';
+import {
+  DEFAULT_NAMESPACE,
+  parseEntityRef,
+  UserEntity,
+} from '@backstage/catalog-model';
+import useAsync, { AsyncState } from 'react-use/lib/useAsync';
 import { catalogApiRef } from '../api';
 import { identityApiRef, useApi } from '@backstage/core-plugin-api';
 
@@ -27,15 +30,13 @@ export function useOwnUser(): AsyncState<UserEntity | undefined> {
   const catalogApi = useApi(catalogApiRef);
   const identityApi = useApi(identityApiRef);
 
-  // TODO: get the full entity (or at least the full entity name) from the
-  // identityApi
-  return useAsync(
-    () =>
-      catalogApi.getEntityByName({
-        kind: 'User',
-        namespace: 'default',
-        name: identityApi.getUserId(),
-      }) as Promise<UserEntity | undefined>,
-    [catalogApi, identityApi],
-  );
+  return useAsync(async () => {
+    const identity = await identityApi.getBackstageIdentity();
+    return catalogApi.getEntityByName(
+      parseEntityRef(identity.userEntityRef, {
+        defaultKind: 'User',
+        defaultNamespace: DEFAULT_NAMESPACE,
+      }),
+    ) as Promise<UserEntity | undefined>;
+  }, [catalogApi, identityApi]);
 }

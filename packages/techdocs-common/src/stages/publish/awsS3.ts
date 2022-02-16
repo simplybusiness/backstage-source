@@ -15,6 +15,7 @@
  */
 import { Entity, EntityName } from '@backstage/catalog-model';
 import { Config } from '@backstage/config';
+import { assertError, ForwardedError } from '@backstage/errors';
 import aws, { Credentials } from 'aws-sdk';
 import { ListObjectsV2Output } from 'aws-sdk/clients/s3';
 import { CredentialsOptions } from 'aws-sdk/lib/credentials';
@@ -31,11 +32,14 @@ import {
   getFileTreeRecursively,
   getHeadersForFileExtension,
   getStaleFiles,
+  lowerCaseEntityTriplet,
   lowerCaseEntityTripletInStoragePath,
+  normalizeExternalStorageRootPath,
 } from './helpers';
 import {
   PublisherBase,
   PublishRequest,
+  PublishResponse,
   ReadinessResponse,
   TechDocsMetadata,
 } from './types';
@@ -48,12 +52,35 @@ const streamToBuffer = (stream: Readable): Promise<Buffer> => {
       stream.on('error', reject);
       stream.on('end', () => resolve(Buffer.concat(chunks)));
     } catch (e) {
-      throw new Error(`Unable to parse the response data ${e.message}`);
+      throw new ForwardedError('Unable to parse the response data', e);
     }
   });
 };
 
 export class AwsS3Publish implements PublisherBase {
+  private readonly storageClient: aws.S3;
+  private readonly bucketName: string;
+  private readonly legacyPathCasing: boolean;
+  private readonly logger: Logger;
+  private readonly bucketRootPath: string;
+  private readonly sse?: 'aws:kms' | 'AES256';
+
+  constructor(options: {
+    storageClient: aws.S3;
+    bucketName: string;
+    legacyPathCasing: boolean;
+    logger: Logger;
+    bucketRootPath: string;
+    sse?: 'aws:kms' | 'AES256';
+  }) {
+    this.storageClient = options.storageClient;
+    this.bucketName = options.bucketName;
+    this.legacyPathCasing = options.legacyPathCasing;
+    this.logger = options.logger;
+    this.bucketRootPath = options.bucketRootPath;
+    this.sse = options.sse;
+  }
+
   static fromConfig(config: Config, logger: Logger): PublisherBase {
     let bucketName = '';
     try {
@@ -64,6 +91,15 @@ export class AwsS3Publish implements PublisherBase {
           'techdocs.publisher.awsS3.bucketName is required.',
       );
     }
+
+    const bucketRootPath = normalizeExternalStorageRootPath(
+      config.getOptionalString('techdocs.publisher.awsS3.bucketRootPath') || '',
+    );
+
+    const sse = config.getOptionalString('techdocs.publisher.awsS3.sse') as
+      | 'aws:kms'
+      | 'AES256'
+      | undefined;
 
     // Credentials is an optional config. If missing, the default ways of authenticating AWS SDK V2 will be used.
     // 1. AWS environment variables
@@ -100,7 +136,19 @@ export class AwsS3Publish implements PublisherBase {
       ...(s3ForcePathStyle && { s3ForcePathStyle }),
     });
 
-    return new AwsS3Publish(storageClient, bucketName, logger);
+    const legacyPathCasing =
+      config.getOptionalBoolean(
+        'techdocs.legacyUseCaseSensitiveTripletPaths',
+      ) || false;
+
+    return new AwsS3Publish({
+      storageClient,
+      bucketName,
+      bucketRootPath,
+      legacyPathCasing,
+      logger,
+      sse,
+    });
   }
 
   private static buildCredentials(
@@ -132,16 +180,6 @@ export class AwsS3Publish implements PublisherBase {
     }
 
     return explicitCredentials;
-  }
-
-  constructor(
-    private readonly storageClient: aws.S3,
-    private readonly bucketName: string,
-    private readonly logger: Logger,
-  ) {
-    this.storageClient = storageClient;
-    this.bucketName = bucketName;
-    this.logger = logger;
   }
 
   /**
@@ -177,15 +215,29 @@ export class AwsS3Publish implements PublisherBase {
    * Upload all the files from the generated `directory` to the S3 bucket.
    * Directory structure used in the bucket is - entityNamespace/entityKind/entityName/index.html
    */
-  async publish({ entity, directory }: PublishRequest): Promise<void> {
+  async publish({
+    entity,
+    directory,
+  }: PublishRequest): Promise<PublishResponse> {
+    const objects: string[] = [];
+    const useLegacyPathCasing = this.legacyPathCasing;
+    const bucketRootPath = this.bucketRootPath;
+    const sse = this.sse;
+
     // First, try to retrieve a list of all individual files currently existing
     let existingFiles: string[] = [];
     try {
-      const remoteFolder = getCloudPathForLocalPath(entity);
+      const remoteFolder = getCloudPathForLocalPath(
+        entity,
+        undefined,
+        useLegacyPathCasing,
+        bucketRootPath,
+      );
       existingFiles = await this.getAllObjectsFromBucket({
         prefix: remoteFolder,
       });
     } catch (e) {
+      assertError(e);
       this.logger.error(
         `Unable to list files for Entity ${entity.metadata.name}: ${e.message}`,
       );
@@ -206,10 +258,17 @@ export class AwsS3Publish implements PublisherBase {
 
           const params = {
             Bucket: this.bucketName,
-            Key: getCloudPathForLocalPath(entity, relativeFilePath),
+            Key: getCloudPathForLocalPath(
+              entity,
+              relativeFilePath,
+              useLegacyPathCasing,
+              bucketRootPath,
+            ),
             Body: fileStream,
-          };
+            ...(sse && { ServerSideEncryption: sse }),
+          } as aws.S3.PutObjectRequest;
 
+          objects.push(params.Key);
           return this.storageClient.upload(params).promise();
         },
         absoluteFilesToUpload,
@@ -232,6 +291,8 @@ export class AwsS3Publish implements PublisherBase {
           getCloudPathForLocalPath(
             entity,
             path.relative(directory, absoluteFilePath),
+            useLegacyPathCasing,
+            bucketRootPath,
           ),
       );
       const staleFiles = getStaleFiles(relativeFilesToUpload, existingFiles);
@@ -256,6 +317,7 @@ export class AwsS3Publish implements PublisherBase {
       const errorMessage = `Unable to delete file(s) from AWS S3. ${error}`;
       this.logger.error(errorMessage);
     }
+    return { objects };
   }
 
   async fetchTechDocsMetadata(
@@ -263,7 +325,12 @@ export class AwsS3Publish implements PublisherBase {
   ): Promise<TechDocsMetadata> {
     try {
       return await new Promise<TechDocsMetadata>(async (resolve, reject) => {
-        const entityRootDir = `${entityName.namespace}/${entityName.kind}/${entityName.name}`;
+        const entityTriplet = `${entityName.namespace}/${entityName.kind}/${entityName.name}`;
+        const entityDir = this.legacyPathCasing
+          ? entityTriplet
+          : lowerCaseEntityTriplet(entityTriplet);
+
+        const entityRootDir = path.posix.join(this.bucketRootPath, entityDir);
 
         const stream = this.storageClient
           .getObject({
@@ -286,12 +353,13 @@ export class AwsS3Publish implements PublisherBase {
 
           resolve(techdocsMetadata);
         } catch (err) {
+          assertError(err);
           this.logger.error(err.message);
           reject(new Error(err.message));
         }
       });
     } catch (e) {
-      throw new Error(`TechDocs metadata fetch failed, ${e.message}`);
+      throw new ForwardedError('TechDocs metadata fetch failed', e);
     }
   }
 
@@ -301,8 +369,19 @@ export class AwsS3Publish implements PublisherBase {
   docsRouter(): express.Handler {
     return async (req, res) => {
       // Decode and trim the leading forward slash
-      // filePath example - /default/Component/documented-component/index.html
-      const filePath = decodeURI(req.path.replace(/^\//, ''));
+      const decodedUri = decodeURI(req.path.replace(/^\//, ''));
+
+      // Root path is removed from the Uri so that legacy casing can be applied
+      // to the entity triplet without manipulating the root path
+      const decodedUriNoRoot = path.relative(this.bucketRootPath, decodedUri);
+
+      // filePath example - /default/component/documented-component/index.html
+      const filePathNoRoot = this.legacyPathCasing
+        ? decodedUriNoRoot
+        : lowerCaseEntityTripletInStoragePath(decodedUriNoRoot);
+
+      // Re-prepend the root path to the relative file path
+      const filePath = path.posix.join(this.bucketRootPath, filePathNoRoot);
 
       // Files with different extensions (CSS, HTML) need to be served with different headers
       const fileExtension = path.extname(filePath);
@@ -321,8 +400,11 @@ export class AwsS3Publish implements PublisherBase {
 
         res.send(await streamToBuffer(stream));
       } catch (err) {
-        this.logger.warn(err.message);
-        res.status(404).json(err.message);
+        assertError(err);
+        this.logger.warn(
+          `TechDocs S3 router failed to serve static files from bucket ${this.bucketName} at key ${filePath}: ${err.message}`,
+        );
+        res.status(404).send('File Not Found');
       }
     };
   }
@@ -333,7 +415,13 @@ export class AwsS3Publish implements PublisherBase {
    */
   async hasDocsBeenGenerated(entity: Entity): Promise<boolean> {
     try {
-      const entityRootDir = `${entity.metadata.namespace}/${entity.kind}/${entity.metadata.name}`;
+      const entityTriplet = `${entity.metadata.namespace}/${entity.kind}/${entity.metadata.name}`;
+      const entityDir = this.legacyPathCasing
+        ? entityTriplet
+        : lowerCaseEntityTriplet(entityTriplet);
+
+      const entityRootDir = path.posix.join(this.bucketRootPath, entityDir);
+
       await this.storageClient
         .headObject({
           Bucket: this.bucketName,
@@ -360,6 +448,7 @@ export class AwsS3Publish implements PublisherBase {
           try {
             newPath = lowerCaseEntityTripletInStoragePath(file);
           } catch (e) {
+            assertError(e);
             this.logger.warn(e.message);
             return;
           }
@@ -388,6 +477,7 @@ export class AwsS3Publish implements PublisherBase {
                 .promise();
             }
           } catch (e) {
+            assertError(e);
             this.logger.warn(`Unable to migrate ${file}: ${e.message}`);
           }
         }, f),

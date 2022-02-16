@@ -15,9 +15,44 @@
  */
 
 import express from 'express';
-import { verifyNonce, encodeState } from './helpers';
+import {
+  verifyNonce,
+  encodeState,
+  readState,
+  defaultCookieConfigurer,
+} from './helpers';
 
 describe('OAuthProvider Utils', () => {
+  describe('encodeState', () => {
+    it('should serialized values', () => {
+      const state = {
+        nonce: '123',
+        env: 'development',
+        origin: 'https://example.com',
+      };
+
+      const encoded = encodeState(state);
+      expect(encoded).toBe(
+        Buffer.from(
+          'nonce=123&env=development&origin=https%3A%2F%2Fexample.com',
+        ).toString('hex'),
+      );
+
+      expect(readState(encoded)).toEqual(state);
+    });
+
+    it('should not include undefined values', () => {
+      const state = { nonce: '123', env: 'development', origin: undefined };
+
+      const encoded = encodeState(state);
+      expect(encoded).toBe(
+        Buffer.from('nonce=123&env=development').toString('hex'),
+      );
+
+      expect(readState(encoded)).toEqual(state);
+    });
+  });
+
   describe('verifyNonce', () => {
     it('should throw error if cookie nonce missing', () => {
       const state = { nonce: 'NONCE', env: 'development' };
@@ -72,6 +107,48 @@ describe('OAuthProvider Utils', () => {
       expect(() => {
         verifyNonce(mockRequest, 'providera');
       }).not.toThrow();
+    });
+  });
+
+  describe('defaultCookieConfigurer', () => {
+    it('should set the correct domain and path for a base url', () => {
+      expect(
+        defaultCookieConfigurer({
+          baseUrl: '',
+          providerId: 'test-provider',
+          callbackUrl: 'http://domain.org/auth',
+        }),
+      ).toMatchObject({
+        domain: 'domain.org',
+        path: '/auth/test-provider',
+        secure: false,
+      });
+    });
+
+    it('should set the correct domain and path for a url containing a frame handler', () => {
+      expect(
+        defaultCookieConfigurer({
+          baseUrl: '',
+          providerId: 'test-provider',
+          callbackUrl: 'http://domain.org/auth/test-provider/handler/frame',
+        }),
+      ).toMatchObject({
+        domain: 'domain.org',
+        path: '/auth/test-provider',
+        secure: false,
+      });
+    });
+
+    it('should set the secure flag if url is using https', () => {
+      expect(
+        defaultCookieConfigurer({
+          baseUrl: '',
+          providerId: 'test-provider',
+          callbackUrl: 'https://domain.org/auth',
+        }),
+      ).toMatchObject({
+        secure: true,
+      });
     });
   });
 });

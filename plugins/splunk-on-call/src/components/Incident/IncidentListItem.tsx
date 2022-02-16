@@ -31,7 +31,7 @@ import { DateTime, Duration } from 'luxon';
 import { Incident, IncidentPhase } from '../types';
 import OpenInBrowserIcon from '@material-ui/icons/OpenInBrowser';
 import { splunkOnCallApiRef } from '../../api/client';
-import { useAsyncFn } from 'react-use';
+import useAsyncFn from 'react-use/lib/useAsyncFn';
 import { TriggerAlarmRequest } from '../../api/types';
 
 import {
@@ -106,7 +106,7 @@ const IncidentAction = ({
   switch (currentPhase) {
     case 'UNACKED':
       return (
-        <Tooltip title="Aknowledge" placement="top">
+        <Tooltip title="Acknowledge" placement="top">
           <IconButton
             onClick={() =>
               acknowledgeAction({ incidentId, incidentType: 'ACKNOWLEDGEMENT' })

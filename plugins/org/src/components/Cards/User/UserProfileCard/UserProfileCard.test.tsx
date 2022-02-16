@@ -15,7 +15,10 @@
  */
 
 import { UserEntity } from '@backstage/catalog-model';
-import { EntityProvider } from '@backstage/plugin-catalog-react';
+import {
+  EntityProvider,
+  entityRouteRef,
+} from '@backstage/plugin-catalog-react';
 import { renderWithEffects, wrapInTestApp } from '@backstage/test-utils';
 import React from 'react';
 import { UserProfileCard } from './UserProfileCard';
@@ -26,6 +29,7 @@ describe('UserSummary Test', () => {
     kind: 'User',
     metadata: {
       name: 'calum.leavy',
+      description: 'Super awesome human',
     },
     spec: {
       profile: {
@@ -53,6 +57,11 @@ describe('UserSummary Test', () => {
         <EntityProvider entity={userEntity}>
           <UserProfileCard entity={userEntity} variant="gridItem" />
         </EntityProvider>,
+        {
+          mountedRoutes: {
+            '/catalog/:namespace/:kind/:name': entityRouteRef,
+          },
+        },
       ),
     );
 
@@ -65,5 +74,6 @@ describe('UserSummary Test', () => {
       'href',
       '/catalog/default/group/ExampleGroup',
     );
+    expect(rendered.getByText('Super awesome human')).toBeInTheDocument();
   });
 });

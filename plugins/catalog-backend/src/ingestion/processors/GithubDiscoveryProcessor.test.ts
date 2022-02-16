@@ -19,6 +19,10 @@ import { LocationSpec } from '@backstage/catalog-model';
 import { GithubDiscoveryProcessor, parseUrl } from './GithubDiscoveryProcessor';
 import { getOrganizationRepositories } from './github';
 import { ConfigReader } from '@backstage/config';
+import {
+  ScmIntegrations,
+  DefaultGithubCredentialsProvider,
+} from '@backstage/integration';
 
 jest.mock('./github');
 const mockGetOrganizationRepositories =
@@ -35,7 +39,8 @@ describe('GithubDiscoveryProcessor', () => {
         org: 'foo',
         host: 'github.com',
         repoSearchPath: /^proj$/,
-        catalogPath: '/blob/master/catalog.yaml',
+        branch: 'master',
+        catalogPath: '/catalog.yaml',
       });
       expect(
         parseUrl('https://github.com/foo/proj*/blob/master/catalog.yaml'),
@@ -43,14 +48,21 @@ describe('GithubDiscoveryProcessor', () => {
         org: 'foo',
         host: 'github.com',
         repoSearchPath: /^proj.*$/,
-        catalogPath: '/blob/master/catalog.yaml',
+        branch: 'master',
+        catalogPath: '/catalog.yaml',
+      });
+      expect(parseUrl('https://github.com/foo')).toEqual({
+        org: 'foo',
+        host: 'github.com',
+        repoSearchPath: /^.*$/,
+        branch: '-',
+        catalogPath: '/catalog-info.yaml',
       });
     });
 
     it('throws on incorrectly formed URLs', () => {
       expect(() => parseUrl('https://github.com')).toThrow();
       expect(() => parseUrl('https://github.com//')).toThrow();
-      expect(() => parseUrl('https://github.com/foo')).toThrow();
       expect(() => parseUrl('https://github.com//foo')).toThrow();
       expect(() => parseUrl('https://github.com/org/teams')).toThrow();
       expect(() => parseUrl('https://github.com/org//teams')).toThrow();
@@ -59,14 +71,18 @@ describe('GithubDiscoveryProcessor', () => {
 
   describe('reject unrelated entries', () => {
     it('rejects unknown types', async () => {
-      const processor = GithubDiscoveryProcessor.fromConfig(
-        new ConfigReader({
-          integrations: {
-            github: [{ host: 'github.com', token: 'blob' }],
-          },
-        }),
-        { logger: getVoidLogger() },
-      );
+      const config = new ConfigReader({
+        integrations: {
+          github: [{ host: 'github.com', token: 'blob' }],
+        },
+      });
+      const integrations = ScmIntegrations.fromConfig(config);
+      const githubCredentialsProvider =
+        DefaultGithubCredentialsProvider.fromIntegrations(integrations);
+      const processor = GithubDiscoveryProcessor.fromConfig(config, {
+        logger: getVoidLogger(),
+        githubCredentialsProvider,
+      });
       const location: LocationSpec = {
         type: 'not-github-discovery',
         target: 'https://github.com',
@@ -77,17 +93,21 @@ describe('GithubDiscoveryProcessor', () => {
     });
 
     it('rejects unknown targets', async () => {
-      const processor = GithubDiscoveryProcessor.fromConfig(
-        new ConfigReader({
-          integrations: {
-            github: [
-              { host: 'github.com', token: 'blob' },
-              { host: 'ghe.example.net', token: 'blob' },
-            ],
-          },
-        }),
-        { logger: getVoidLogger() },
-      );
+      const config = new ConfigReader({
+        integrations: {
+          github: [
+            { host: 'github.com', token: 'blob' },
+            { host: 'ghe.example.net', token: 'blob' },
+          ],
+        },
+      });
+      const integrations = ScmIntegrations.fromConfig(config);
+      const githubCredentialsProvider =
+        DefaultGithubCredentialsProvider.fromIntegrations(integrations);
+      const processor = GithubDiscoveryProcessor.fromConfig(config, {
+        logger: getVoidLogger(),
+        githubCredentialsProvider,
+      });
       const location: LocationSpec = {
         type: 'github-discovery',
         target: 'https://not.github.com/apa',
@@ -101,14 +121,18 @@ describe('GithubDiscoveryProcessor', () => {
   });
 
   describe('handles repositories', () => {
-    const processor = GithubDiscoveryProcessor.fromConfig(
-      new ConfigReader({
-        integrations: {
-          github: [{ host: 'github.com', token: 'blob' }],
-        },
-      }),
-      { logger: getVoidLogger() },
-    );
+    const config = new ConfigReader({
+      integrations: {
+        github: [{ host: 'github.com', token: 'blob' }],
+      },
+    });
+    const integrations = ScmIntegrations.fromConfig(config);
+    const githubCredentialsProvider =
+      DefaultGithubCredentialsProvider.fromIntegrations(integrations);
+    const processor = GithubDiscoveryProcessor.fromConfig(config, {
+      logger: getVoidLogger(),
+      githubCredentialsProvider,
+    });
 
     beforeEach(() => {
       mockGetOrganizationRepositories.mockClear();
@@ -125,11 +149,17 @@ describe('GithubDiscoveryProcessor', () => {
             name: 'backstage',
             url: 'https://github.com/backstage/backstage',
             isArchived: false,
+            defaultBranchRef: {
+              name: 'master',
+            },
           },
           {
             name: 'demo',
             url: 'https://github.com/backstage/demo',
             isArchived: false,
+            defaultBranchRef: {
+              name: 'main',
+            },
           },
         ],
       });
@@ -143,6 +173,7 @@ describe('GithubDiscoveryProcessor', () => {
           type: 'url',
           target:
             'https://github.com/backstage/backstage/blob/master/catalog.yaml',
+          presence: 'optional',
         },
         optional: true,
       });
@@ -151,6 +182,95 @@ describe('GithubDiscoveryProcessor', () => {
         location: {
           type: 'url',
           target: 'https://github.com/backstage/demo/blob/master/catalog.yaml',
+          presence: 'optional',
+        },
+        optional: true,
+      });
+    });
+
+    it('output repositories with wildcards default branch option', async () => {
+      const location: LocationSpec = {
+        type: 'github-discovery',
+        target: 'https://github.com/backstage/*/blob/-/catalog.yaml',
+      };
+      mockGetOrganizationRepositories.mockResolvedValueOnce({
+        repositories: [
+          {
+            name: 'backstage',
+            url: 'https://github.com/backstage/tech-docs',
+            isArchived: false,
+            defaultBranchRef: {
+              name: 'main',
+            },
+          },
+        ],
+      });
+      const emitter = jest.fn();
+
+      await processor.readLocation(location, false, emitter);
+
+      expect(emitter).toHaveBeenCalledWith({
+        type: 'location',
+        location: {
+          type: 'url',
+          target:
+            'https://github.com/backstage/tech-docs/blob/main/catalog.yaml',
+          presence: 'optional',
+        },
+        optional: true,
+      });
+    });
+
+    it("doesn't output repositories as default branch returned is empty", async () => {
+      const location: LocationSpec = {
+        type: 'github-discovery',
+        target: 'https://github.com/backstage/blob/-/catalog.yaml',
+      };
+      mockGetOrganizationRepositories.mockResolvedValueOnce({
+        repositories: [
+          {
+            name: 'backstage',
+            url: 'https://github.com/backstage/tech-docs',
+            isArchived: false,
+            defaultBranchRef: null,
+          },
+        ],
+      });
+      const emitter = jest.fn();
+
+      await processor.readLocation(location, false, emitter);
+
+      expect(emitter).not.toHaveBeenCalled();
+    });
+
+    it('output repositories with wildcards default branch option without catalog-info patch or branch match', async () => {
+      const location: LocationSpec = {
+        type: 'github-discovery',
+        target: 'https://github.com/backstage',
+      };
+      mockGetOrganizationRepositories.mockResolvedValueOnce({
+        repositories: [
+          {
+            name: 'backstage',
+            url: 'https://github.com/backstage/backstage',
+            isArchived: false,
+            defaultBranchRef: {
+              name: 'master',
+            },
+          },
+        ],
+      });
+      const emitter = jest.fn();
+
+      await processor.readLocation(location, false, emitter);
+
+      expect(emitter).toHaveBeenCalledWith({
+        type: 'location',
+        location: {
+          type: 'url',
+          target:
+            'https://github.com/backstage/backstage/blob/master/catalog-info.yaml',
+          presence: 'optional',
         },
         optional: true,
       });
@@ -168,16 +288,31 @@ describe('GithubDiscoveryProcessor', () => {
             name: 'backstage',
             url: 'https://github.com/backstage/backstage',
             isArchived: false,
+            defaultBranchRef: {
+              name: 'main',
+            },
           },
           {
             name: 'techdocs-cli',
             url: 'https://github.com/backstage/techdocs-cli',
             isArchived: false,
+            defaultBranchRef: {
+              name: 'main',
+            },
           },
           {
             name: 'techdocs-container',
             url: 'https://github.com/backstage/techdocs-container',
             isArchived: false,
+            defaultBranchRef: {
+              name: 'main',
+            },
+          },
+          {
+            name: 'techdocs-durp',
+            url: 'https://github.com/backstage/techdocs-durp',
+            isArchived: false,
+            defaultBranchRef: null,
           },
         ],
       });
@@ -191,6 +326,7 @@ describe('GithubDiscoveryProcessor', () => {
           type: 'url',
           target:
             'https://github.com/backstage/techdocs-cli/blob/master/catalog.yaml',
+          presence: 'optional',
         },
         optional: true,
       });
@@ -200,10 +336,12 @@ describe('GithubDiscoveryProcessor', () => {
           type: 'url',
           target:
             'https://github.com/backstage/techdocs-container/blob/master/catalog.yaml',
+          presence: 'optional',
         },
         optional: true,
       });
     });
+
     it('filter unrelated and archived repositories', async () => {
       const location: LocationSpec = {
         type: 'github-discovery',
@@ -215,21 +353,33 @@ describe('GithubDiscoveryProcessor', () => {
             name: 'abstest',
             url: 'https://github.com/backstage/abctest',
             isArchived: false,
+            defaultBranchRef: {
+              name: 'main',
+            },
           },
           {
             name: 'test',
             url: 'https://github.com/backstage/test',
             isArchived: false,
+            defaultBranchRef: {
+              name: 'main',
+            },
           },
           {
             name: 'test-archived',
             url: 'https://github.com/backstage/test',
             isArchived: true,
+            defaultBranchRef: {
+              name: 'main',
+            },
           },
           {
             name: 'testxyz',
             url: 'https://github.com/backstage/testxyz',
             isArchived: false,
+            defaultBranchRef: {
+              name: 'main',
+            },
           },
         ],
       });
@@ -242,6 +392,7 @@ describe('GithubDiscoveryProcessor', () => {
         location: {
           type: 'url',
           target: 'https://github.com/backstage/test/blob/master/catalog.yaml',
+          presence: 'optional',
         },
         optional: true,
       });

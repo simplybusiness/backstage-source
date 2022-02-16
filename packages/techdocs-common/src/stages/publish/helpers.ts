@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Entity, ENTITY_DEFAULT_NAMESPACE } from '@backstage/catalog-model';
+import { Entity, DEFAULT_NAMESPACE } from '@backstage/catalog-model';
 import mime from 'mime-types';
 import path from 'path';
 import createLimiter from 'p-limit';
@@ -42,7 +42,7 @@ export type responseHeadersType = {
 /**
  * Some files need special headers to be used correctly by the frontend. This function
  * generates headers in the response to those file requests.
- * @param {string} fileExtension .html, .css, .js, .png etc.
+ * @param fileExtension - .html, .css, .js, .png etc.
  */
 export const getHeadersForFileExtension = (
   fileExtension: string,
@@ -74,7 +74,7 @@ export const getHeadersForFileExtension = (
  *   '/User/username/my_dir/dirB/file2',
  *   '/User/username/my_dir/file3'
  * ]
- * @param rootDirPath Absolute path to the root directory.
+ * @param rootDirPath - Absolute path to the root directory.
  */
 export const getFileTreeRecursively = async (
   rootDirPath: string,
@@ -87,32 +87,80 @@ export const getFileTreeRecursively = async (
 };
 
 /**
- * Returns the version of an object's storage path where the first three parts
- * of the path (the entity triplet of namespace, kind, and name) are
- * lower-cased.
+ * Takes a posix path and returns a lower-cased version of entity's triplet
+ * with the remaining path in posix.
  *
  * Path must not include a starting slash.
  *
  * @example
- * lowerCaseEntityTripletInStoragePath('default/Component/backstage')
+ * lowerCaseEntityTriplet('default/Component/backstage')
  * // return default/component/backstage
+ */
+export const lowerCaseEntityTriplet = (posixPath: string): string => {
+  const [namespace, kind, name, ...rest] = posixPath.split(path.posix.sep);
+  const lowerNamespace = namespace.toLowerCase();
+  const lowerKind = kind.toLowerCase();
+  const lowerName = name.toLowerCase();
+  return [lowerNamespace, lowerKind, lowerName, ...rest].join(path.posix.sep);
+};
+
+/**
+ * Takes either a win32 or posix path and returns a lower-cased version of entity's triplet
+ * with the remaining path in posix.
+ *
+ * Starting slashes will be trimmed.
+ *
+ * Throws an error if the path does not appear to be an entity triplet.
+ *
+ * @example
+ * lowerCaseEntityTripletInStoragePath('/default/Component/backstage/file.txt')
+ * // return default/component/backstage/file.txt
  */
 export const lowerCaseEntityTripletInStoragePath = (
   originalPath: string,
 ): string => {
-  const trimmedPath =
-    originalPath[0] === '/' ? originalPath.substring(1) : originalPath;
-  const matches = trimmedPath.match(/\//g) || [];
-  if (matches.length <= 2) {
+  let posixPath = originalPath;
+  if (originalPath.includes(path.win32.sep)) {
+    posixPath = originalPath.split(path.win32.sep).join(path.posix.sep);
+  }
+
+  // remove leading slash
+  const parts = posixPath.split(path.posix.sep);
+  if (parts[0] === '') {
+    parts.shift();
+  }
+
+  // check if all parts of the entity exist (name, namespace, kind) plus filename
+  if (parts.length <= 3) {
     throw new Error(
       `Encountered file unmanaged by TechDocs ${originalPath}. Skipping.`,
     );
   }
-  const [namespace, kind, name, ...parts] = originalPath.split('/');
-  const lowerNamespace = namespace.toLowerCase();
-  const lowerKind = kind.toLowerCase();
-  const lowerName = name.toLowerCase();
-  return [lowerNamespace, lowerKind, lowerName, ...parts].join('/');
+
+  return lowerCaseEntityTriplet(parts.join(path.posix.sep));
+};
+
+/**
+ * Take a posix path and return a path without leading and trailing
+ * separators
+ *
+ * @example
+ * normalizeExternalStorageRootPath('/backstage-data/techdocs/')
+ * // return backstage-data/techdocs
+ */
+export const normalizeExternalStorageRootPath = (posixPath: string): string => {
+  // remove leading slash
+  let normalizedPath = posixPath;
+  if (posixPath.startsWith(path.posix.sep)) {
+    normalizedPath = posixPath.slice(1);
+  }
+
+  // remove trailing slash
+  if (normalizedPath.endsWith(path.posix.sep)) {
+    normalizedPath = normalizedPath.slice(0, normalizedPath.length - 1);
+  }
+
+  return normalizedPath;
 };
 
 // Only returns the files that existed previously and are not present anymore.
@@ -131,6 +179,8 @@ export const getStaleFiles = (
 export const getCloudPathForLocalPath = (
   entity: Entity,
   localPath = '',
+  useLegacyPathCasing = false,
+  externalStorageRootPath = '',
 ): string => {
   // Convert destination file path to a POSIX path for uploading.
   // GCS expects / as path separator and relativeFilePath will contain \\ on Windows.
@@ -138,10 +188,24 @@ export const getCloudPathForLocalPath = (
   const relativeFilePathPosix = localPath.split(path.sep).join(path.posix.sep);
 
   // The / delimiter is intentional since it represents the cloud storage and not the local file system.
-  const entityRootDir = `${
-    entity.metadata?.namespace ?? ENTITY_DEFAULT_NAMESPACE
-  }/${entity.kind}/${entity.metadata.name}`;
-  return `${entityRootDir}/${relativeFilePathPosix}`; // GCS Bucket file relative path
+  const entityRootDir = `${entity.metadata?.namespace ?? DEFAULT_NAMESPACE}/${
+    entity.kind
+  }/${entity.metadata.name}`;
+
+  const relativeFilePathTriplet = `${entityRootDir}/${relativeFilePathPosix}`;
+
+  const destination = useLegacyPathCasing
+    ? relativeFilePathTriplet
+    : lowerCaseEntityTriplet(relativeFilePathTriplet);
+
+  // Again, the / delimiter is intentional, as it represents remote storage.
+  const destinationWithRoot = [
+    // The extra filter prevents unintended double slashes and prefixes.
+    ...externalStorageRootPath.split(path.posix.sep).filter(s => s !== ''),
+    destination,
+  ].join('/');
+
+  return destinationWithRoot; // Remote storage file relative path
 };
 
 // Perform rate limited generic operations by passing a function and a list of arguments

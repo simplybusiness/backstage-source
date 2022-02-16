@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-import React, { ComponentProps, useMemo } from 'react';
-import { useStarredEntities } from '@backstage/plugin-catalog-react';
-import { IconButton, makeStyles, Tooltip, withStyles } from '@material-ui/core';
-import StarBorder from '@material-ui/icons/StarBorder';
-import Star from '@material-ui/icons/Star';
 import { Entity } from '@backstage/catalog-model';
+import { useStarredEntity } from '@backstage/plugin-catalog-react';
+import { IconButton, makeStyles, Tooltip, withStyles } from '@material-ui/core';
+import Star from '@material-ui/icons/Star';
+import StarBorder from '@material-ui/icons/StarBorder';
+import React, { ComponentProps } from 'react';
 
 type Props = ComponentProps<typeof IconButton> & { entity: Entity };
 
@@ -52,24 +52,22 @@ export const favouriteTemplateIcon = (isStarred: boolean) =>
 
 /**
  * IconButton for showing if a current entity is starred and adding/removing it from the favourite entities
- * @param props MaterialUI IconButton props extended by required `entity` prop
+ * @param props - MaterialUI IconButton props extended by required `entity` prop
  */
 export const FavouriteTemplate = (props: Props) => {
   const classes = useStyles();
-  const { toggleStarredEntity, isStarredEntity } = useStarredEntities();
-  const isStarred = useMemo(
-    () => isStarredEntity(props.entity),
-    [isStarredEntity, props.entity],
+  const { toggleStarredEntity, isStarredEntity } = useStarredEntity(
+    props.entity,
   );
   return (
     <IconButton
       color="inherit"
       className={classes.starButton}
       {...props}
-      onClick={() => toggleStarredEntity(props.entity)}
+      onClick={() => toggleStarredEntity()}
     >
-      <Tooltip title={favouriteTemplateTooltip(isStarred)}>
-        {favouriteTemplateIcon(isStarred)}
+      <Tooltip title={favouriteTemplateTooltip(isStarredEntity)}>
+        {favouriteTemplateIcon(isStarredEntity)}
       </Tooltip>
     </IconButton>
   );

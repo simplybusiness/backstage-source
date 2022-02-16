@@ -33,8 +33,10 @@ import {
   createPlugin,
   createRoutableExtension,
   discoveryApiRef,
-  identityApiRef,
+  fetchApiRef,
 } from '@backstage/core-plugin-api';
+import { OwnedEntityPicker } from './components/fields/OwnedEntityPicker';
+import { EntityTagsPicker } from './components/fields/EntityTagsPicker';
 
 export const scaffolderPlugin = createPlugin({
   id: 'scaffolder',
@@ -43,11 +45,15 @@ export const scaffolderPlugin = createPlugin({
       api: scaffolderApiRef,
       deps: {
         discoveryApi: discoveryApiRef,
-        identityApi: identityApiRef,
         scmIntegrationsApi: scmIntegrationsApiRef,
+        fetchApi: fetchApiRef,
       },
-      factory: ({ discoveryApi, identityApi, scmIntegrationsApi }) =>
-        new ScaffolderClient({ discoveryApi, identityApi, scmIntegrationsApi }),
+      factory: ({ discoveryApi, scmIntegrationsApi, fetchApi }) =>
+        new ScaffolderClient({
+          discoveryApi,
+          scmIntegrationsApi,
+          fetchApi,
+        }),
     }),
   ],
   routes: {
@@ -90,7 +96,26 @@ export const OwnerPickerFieldExtension = scaffolderPlugin.provide(
 
 export const ScaffolderPage = scaffolderPlugin.provide(
   createRoutableExtension({
+    name: 'ScaffolderPage',
     component: () => import('./components/Router').then(m => m.Router),
     mountPoint: rootRouteRef,
+  }),
+);
+
+export const OwnedEntityPickerFieldExtension = scaffolderPlugin.provide(
+  createScaffolderFieldExtension({
+    component: OwnedEntityPicker,
+    name: 'OwnedEntityPicker',
+  }),
+);
+
+/**
+ * EntityTagsPickerFieldExtension
+ * @public
+ */
+export const EntityTagsPickerFieldExtension = scaffolderPlugin.provide(
+  createScaffolderFieldExtension({
+    component: EntityTagsPicker,
+    name: 'EntityTagsPicker',
   }),
 );

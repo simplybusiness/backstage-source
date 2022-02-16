@@ -15,9 +15,9 @@
  */
 
 import React from 'react';
-import { generatePath } from 'react-router-dom';
 
 import { Entity } from '@backstage/catalog-model';
+import { useApi, useRouteRef, configApiRef } from '@backstage/core-plugin-api';
 import { Card, CardActions, CardContent, CardMedia } from '@material-ui/core';
 import { rootDocsRouteRef } from '../../routes';
 
@@ -26,12 +26,15 @@ import {
   ItemCardGrid,
   ItemCardHeader,
 } from '@backstage/core-components';
+import { toLowerMaybe } from '../../helpers';
 
 export const DocsCardGrid = ({
   entities,
 }: {
   entities: Entity[] | undefined;
 }) => {
+  const getRouteToReaderPageFor = useRouteRef(rootDocsRouteRef);
+  const config = useApi(configApiRef);
   if (!entities) return null;
   return (
     <ItemCardGrid data-testid="docs-explore">
@@ -40,17 +43,23 @@ export const DocsCardGrid = ({
         : entities.map((entity, index: number) => (
             <Card key={index}>
               <CardMedia>
-                <ItemCardHeader title={entity.metadata.name} />
+                <ItemCardHeader
+                  title={entity.metadata.title ?? entity.metadata.name}
+                />
               </CardMedia>
               <CardContent>{entity.metadata.description}</CardContent>
               <CardActions>
                 <Button
-                  to={generatePath(rootDocsRouteRef.path, {
-                    namespace: entity.metadata.namespace ?? 'default',
-                    kind: entity.kind,
-                    name: entity.metadata.name,
+                  to={getRouteToReaderPageFor({
+                    namespace: toLowerMaybe(
+                      entity.metadata.namespace ?? 'default',
+                      config,
+                    ),
+                    kind: toLowerMaybe(entity.kind, config),
+                    name: toLowerMaybe(entity.metadata.name, config),
                   })}
                   color="primary"
+                  data-testid="read_docs"
                 >
                   Read Docs
                 </Button>

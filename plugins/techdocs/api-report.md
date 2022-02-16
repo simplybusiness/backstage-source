@@ -13,6 +13,7 @@ import { CSSProperties } from '@material-ui/styles';
 import { DiscoveryApi } from '@backstage/core-plugin-api';
 import { Entity } from '@backstage/catalog-model';
 import { EntityName } from '@backstage/catalog-model';
+import { FetchApi } from '@backstage/core-plugin-api';
 import { IdentityApi } from '@backstage/core-plugin-api';
 import { LocationSpec } from '@backstage/catalog-model';
 import { default as React_2 } from 'react';
@@ -90,9 +91,15 @@ export const DocsCardGrid: ({
 export const DocsResultListItem: ({
   result,
   lineClamp,
+  asListItem,
+  asLink,
+  title,
 }: {
   result: any;
   lineClamp?: number | undefined;
+  asListItem?: boolean | undefined;
+  asLink?: boolean | undefined;
+  title?: string | undefined;
 }) => JSX.Element;
 
 // Warning: (ae-missing-release-tag) "DocsTable" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
@@ -139,6 +146,11 @@ export type DocsTableRow = {
 // @public (undocumented)
 export const EmbeddedDocsRouter: (_props: Props_2) => JSX.Element;
 
+// Warning: (ae-missing-release-tag) "EntityListDocsGrid" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
+//
+// @public (undocumented)
+export const EntityListDocsGrid: () => JSX.Element;
+
 // Warning: (ae-missing-release-tag) "EntityListDocsTable" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
 //
 // @public (undocumented)
@@ -161,6 +173,11 @@ export const EntityTechdocsContent: (_props: {
   entity?: Entity | undefined;
 }) => JSX.Element;
 
+// Warning: (ae-missing-release-tag) "isTechDocsAvailable" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
+//
+// @public (undocumented)
+export const isTechDocsAvailable: (entity: Entity) => boolean;
+
 // Warning: (ae-missing-release-tag) "PanelType" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
 //
 // @public (undocumented)
@@ -170,23 +187,22 @@ export type PanelType = 'DocsCardGrid' | 'DocsTable';
 // Warning: (ae-missing-release-tag) "Reader" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
 //
 // @public (undocumented)
-export const Reader: ({ entityId, onReady }: Props_3) => JSX.Element;
+export const Reader: ({
+  entityRef,
+  onReady,
+  withSearch,
+}: Props_3) => JSX.Element;
 
 // Warning: (ae-missing-release-tag) "Router" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
 //
 // @public (undocumented)
 export const Router: () => JSX.Element;
 
-// Warning: (ae-missing-release-tag) "SyncResult" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
-//
-// @public (undocumented)
+// @public
 export type SyncResult = 'cached' | 'updated';
 
-// Warning: (ae-missing-release-tag) "TechDocsApi" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
-//
-// @public (undocumented)
+// @public
 export interface TechDocsApi {
-  // (undocumented)
   getApiOrigin(): Promise<string>;
   // Warning: (ae-forgotten-export) The symbol "TechDocsEntityMetadata" needs to be exported by the entry point index.d.ts
   //
@@ -198,26 +214,15 @@ export interface TechDocsApi {
   getTechDocsMetadata(entityId: EntityName): Promise<TechDocsMetadata>;
 }
 
-// Warning: (ae-missing-release-tag) "techdocsApiRef" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
-//
-// @public (undocumented)
+// @public
 export const techdocsApiRef: ApiRef<TechDocsApi>;
 
-// Warning: (tsdoc-escape-right-brace) The "}" character should be escaped using a backslash to avoid confusion with a TSDoc inline tag
-// Warning: (tsdoc-malformed-inline-tag) Expecting a TSDoc tag starting with "{@"
-// Warning: (tsdoc-undefined-tag) The TSDoc tag "@property" is not defined in this configuration
-// Warning: (ae-missing-release-tag) "TechDocsClient" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
-//
 // @public
 export class TechDocsClient implements TechDocsApi {
-  constructor({
-    configApi,
-    discoveryApi,
-    identityApi,
-  }: {
+  constructor(options: {
     configApi: Config;
     discoveryApi: DiscoveryApi;
-    identityApi: IdentityApi;
+    fetchApi: FetchApi;
   });
   // (undocumented)
   configApi: Config;
@@ -225,14 +230,8 @@ export class TechDocsClient implements TechDocsApi {
   discoveryApi: DiscoveryApi;
   // (undocumented)
   getApiOrigin(): Promise<string>;
-  // Warning: (tsdoc-param-tag-missing-hyphen) The @param block should be followed by a parameter name and then a hyphen
-  // Warning: (tsdoc-param-tag-with-invalid-type) The @param block should not include a JSDoc-style '{type}'
   getEntityMetadata(entityId: EntityName): Promise<TechDocsEntityMetadata>;
-  // Warning: (tsdoc-param-tag-missing-hyphen) The @param block should be followed by a parameter name and then a hyphen
-  // Warning: (tsdoc-param-tag-with-invalid-type) The @param block should not include a JSDoc-style '{type}'
   getTechDocsMetadata(entityId: EntityName): Promise<TechDocsMetadata>;
-  // (undocumented)
-  identityApi: IdentityApi;
 }
 
 // Warning: (ae-missing-release-tag) "TechDocsCustomHome" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
@@ -249,10 +248,54 @@ export const TechDocsCustomHome: ({
 // @public (undocumented)
 export const TechDocsIndexPage: () => JSX.Element;
 
+// Warning: (ae-missing-release-tag) "TechDocsPage" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
+//
+// @public (undocumented)
+export const TechDocsPage: ({ children }: TechDocsPageProps) => JSX.Element;
+
 // Warning: (ae-missing-release-tag) "TechdocsPage" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
 //
 // @public (undocumented)
 export const TechdocsPage: () => JSX.Element;
+
+// Warning: (ae-missing-release-tag) "TechDocsPageHeader" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
+//
+// @public (undocumented)
+export const TechDocsPageHeader: ({
+  entityRef,
+  entityMetadata,
+  techDocsMetadata,
+}: TechDocsPageHeaderProps) => JSX.Element;
+
+// Warning: (ae-missing-release-tag) "TechDocsPageHeaderProps" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
+//
+// @public (undocumented)
+export type TechDocsPageHeaderProps = {
+  entityRef: EntityName;
+  entityMetadata?: TechDocsEntityMetadata;
+  techDocsMetadata?: TechDocsMetadata;
+};
+
+// Warning: (ae-missing-release-tag) "TechDocsPageProps" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
+//
+// @public (undocumented)
+export type TechDocsPageProps = {
+  children?: TechDocsPageRenderFunction | React_2.ReactNode;
+};
+
+// Warning: (ae-missing-release-tag) "TechDocsPageRenderFunction" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
+//
+// @public (undocumented)
+export type TechDocsPageRenderFunction = ({
+  techdocsMetadataValue,
+  entityMetadataValue,
+  entityRef,
+}: {
+  techdocsMetadataValue?: TechDocsMetadata | undefined;
+  entityMetadataValue?: TechDocsEntityMetadata | undefined;
+  entityRef: EntityName;
+  onReady: () => void;
+}) => JSX.Element;
 
 // Warning: (ae-forgotten-export) The symbol "Props" needs to be exported by the entry point index.d.ts
 // Warning: (ae-missing-release-tag) "TechDocsPageWrapper" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
@@ -271,6 +314,11 @@ export const TechDocsPicker: () => null;
 const techdocsPlugin: BackstagePlugin<
   {
     root: RouteRef<undefined>;
+    docRoot: RouteRef<{
+      name: string;
+      kind: string;
+      namespace: string;
+    }>;
     entityContent: RouteRef<undefined>;
   },
   {}
@@ -281,13 +329,12 @@ export { techdocsPlugin };
 // Warning: (ae-missing-release-tag) "TechDocsReaderPage" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
 //
 // @public (undocumented)
-export const TechDocsReaderPage: () => JSX.Element;
+export const TechDocsReaderPage: ({
+  children,
+}: TechDocsPageProps) => JSX.Element;
 
-// Warning: (ae-missing-release-tag) "TechDocsStorageApi" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
-//
-// @public (undocumented)
+// @public
 export interface TechDocsStorageApi {
-  // (undocumented)
   getApiOrigin(): Promise<string>;
   // (undocumented)
   getBaseUrl(
@@ -308,26 +355,16 @@ export interface TechDocsStorageApi {
   ): Promise<SyncResult>;
 }
 
-// Warning: (ae-missing-release-tag) "techdocsStorageApiRef" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
-//
-// @public (undocumented)
+// @public
 export const techdocsStorageApiRef: ApiRef<TechDocsStorageApi>;
 
-// Warning: (tsdoc-escape-right-brace) The "}" character should be escaped using a backslash to avoid confusion with a TSDoc inline tag
-// Warning: (tsdoc-malformed-inline-tag) Expecting a TSDoc tag starting with "{@"
-// Warning: (tsdoc-undefined-tag) The TSDoc tag "@property" is not defined in this configuration
-// Warning: (ae-missing-release-tag) "TechDocsStorageClient" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
-//
 // @public
 export class TechDocsStorageClient implements TechDocsStorageApi {
-  constructor({
-    configApi,
-    discoveryApi,
-    identityApi,
-  }: {
+  constructor(options: {
     configApi: Config;
     discoveryApi: DiscoveryApi;
     identityApi: IdentityApi;
+    fetchApi: FetchApi;
   });
   // (undocumented)
   configApi: Config;
@@ -343,27 +380,11 @@ export class TechDocsStorageClient implements TechDocsStorageApi {
   ): Promise<string>;
   // (undocumented)
   getBuilder(): Promise<string>;
-  // Warning: (tsdoc-param-tag-missing-hyphen) The @param block should be followed by a parameter name and then a hyphen
-  // Warning: (tsdoc-param-tag-with-invalid-type) The @param block should not include a JSDoc-style '{type}'
-  // Warning: (tsdoc-param-tag-missing-hyphen) The @param block should be followed by a parameter name and then a hyphen
-  // Warning: (tsdoc-param-tag-with-invalid-type) The @param block should not include a JSDoc-style '{type}'
-  // Warning: (tsdoc-escape-right-brace) The "}" character should be escaped using a backslash to avoid confusion with a TSDoc inline tag
-  // Warning: (tsdoc-malformed-inline-tag) Expecting a TSDoc tag starting with "{@"
-  // Warning: (tsdoc-escape-right-brace) The "}" character should be escaped using a backslash to avoid confusion with a TSDoc inline tag
-  // Warning: (tsdoc-malformed-inline-tag) Expecting a TSDoc tag starting with "{@"
   getEntityDocs(entityId: EntityName, path: string): Promise<string>;
   // (undocumented)
   getStorageUrl(): Promise<string>;
   // (undocumented)
   identityApi: IdentityApi;
-  // Warning: (tsdoc-param-tag-missing-hyphen) The @param block should be followed by a parameter name and then a hyphen
-  // Warning: (tsdoc-param-tag-with-invalid-type) The @param block should not include a JSDoc-style '{type}'
-  // Warning: (tsdoc-param-tag-missing-hyphen) The @param block should be followed by a parameter name and then a hyphen
-  // Warning: (tsdoc-param-tag-with-invalid-type) The @param block should not include a JSDoc-style '{type}'
-  // Warning: (tsdoc-escape-right-brace) The "}" character should be escaped using a backslash to avoid confusion with a TSDoc inline tag
-  // Warning: (tsdoc-malformed-inline-tag) Expecting a TSDoc tag starting with "{@"
-  // Warning: (tsdoc-escape-right-brace) The "}" character should be escaped using a backslash to avoid confusion with a TSDoc inline tag
-  // Warning: (tsdoc-malformed-inline-tag) Expecting a TSDoc tag starting with "{@"
   syncEntityDocs(
     entityId: EntityName,
     logHandler?: (line: string) => void,
@@ -374,7 +395,5 @@ export class TechDocsStorageClient implements TechDocsStorageApi {
 //
 // src/home/components/EntityListDocsTable.d.ts:11:5 - (ae-forgotten-export) The symbol "columnFactories" needs to be exported by the entry point index.d.ts
 // src/home/components/EntityListDocsTable.d.ts:12:5 - (ae-forgotten-export) The symbol "actionFactories" needs to be exported by the entry point index.d.ts
-// src/plugin.d.ts:24:5 - (ae-forgotten-export) The symbol "TabsConfig" needs to be exported by the entry point index.d.ts
-
-// (No @packageDocumentation comment for this package)
+// src/plugin.d.ts:29:5 - (ae-forgotten-export) The symbol "TabsConfig" needs to be exported by the entry point index.d.ts
 ```

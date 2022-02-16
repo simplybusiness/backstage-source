@@ -45,7 +45,7 @@ import {
   SignInResolver,
 } from '../types';
 import { Logger } from 'winston';
-import got from 'got';
+import fetch from 'node-fetch';
 
 type PrivateInfo = {
   refreshToken: string;
@@ -104,9 +104,7 @@ export class MicrosoftAuthProvider implements OAuthHandlers {
     });
   }
 
-  async handler(
-    req: express.Request,
-  ): Promise<{ response: OAuthResponse; refreshToken: string }> {
+  async handler(req: express.Request) {
     const { result, privateInfo } = await executeFrameHandlerStrategy<
       OAuthResult,
       PrivateInfo
@@ -118,31 +116,39 @@ export class MicrosoftAuthProvider implements OAuthHandlers {
     };
   }
 
-  async refresh(req: OAuthRefreshRequest): Promise<OAuthResponse> {
-    const { accessToken, params } = await executeRefreshTokenStrategy(
-      this._strategy,
-      req.refreshToken,
-      req.scope,
-    );
+  async refresh(req: OAuthRefreshRequest) {
+    const { accessToken, refreshToken, params } =
+      await executeRefreshTokenStrategy(
+        this._strategy,
+        req.refreshToken,
+        req.scope,
+      );
 
     const fullProfile = await executeFetchUserProfileStrategy(
       this._strategy,
       accessToken,
     );
 
-    return this.handleResult({
-      fullProfile,
-      params,
-      accessToken,
-      refreshToken: req.refreshToken,
-    });
+    return {
+      response: await this.handleResult({
+        fullProfile,
+        params,
+        accessToken,
+      }),
+      refreshToken,
+    };
   }
 
   private async handleResult(result: OAuthResult) {
     const photo = await this.getUserPhoto(result.accessToken);
     result.fullProfile.photos = photo ? [{ value: photo }] : undefined;
 
-    const { profile } = await this.authHandler(result);
+    const context = {
+      logger: this.logger,
+      catalogIdentityClient: this.catalogIdentityClient,
+      tokenIssuer: this.tokenIssuer,
+    };
+    const { profile } = await this.authHandler(result, context);
 
     const response: OAuthResponse = {
       providerInfo: {
@@ -160,11 +166,7 @@ export class MicrosoftAuthProvider implements OAuthHandlers {
           result,
           profile,
         },
-        {
-          tokenIssuer: this.tokenIssuer,
-          catalogIdentityClient: this.catalogIdentityClient,
-          logger: this.logger,
-        },
+        context,
       );
     }
 
@@ -173,19 +175,17 @@ export class MicrosoftAuthProvider implements OAuthHandlers {
 
   private getUserPhoto(accessToken: string): Promise<string | undefined> {
     return new Promise(resolve => {
-      got
-        .get('https://graph.microsoft.com/v1.0/me/photos/48x48/$value', {
-          encoding: 'binary',
-          responseType: 'buffer',
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        })
-        .then(photoData => {
-          const photoURL = `data:image/jpeg;base64,${Buffer.from(
-            photoData.body,
+      fetch('https://graph.microsoft.com/v1.0/me/photos/48x48/$value', {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      })
+        .then(response => response.arrayBuffer())
+        .then(arrayBuffer => {
+          const imageUrl = `data:image/jpeg;base64,${Buffer.from(
+            arrayBuffer,
           ).toString('base64')}`;
-          resolve(photoURL);
+          resolve(imageUrl);
         })
         .catch(error => {
           this.logger.warn(
@@ -220,22 +220,26 @@ export const microsoftEmailSignInResolver: SignInResolver<OAuthResult> = async (
   return { id: entity.metadata.name, entity, token };
 };
 
-export const microsoftDefaultSignInResolver: SignInResolver<OAuthResult> =
-  async (info, ctx) => {
-    const { profile } = info;
+export const microsoftDefaultSignInResolver: SignInResolver<
+  OAuthResult
+> = async (info, ctx) => {
+  const { profile } = info;
 
-    if (!profile.email) {
-      throw new Error('Profile contained no email');
-    }
+  if (!profile.email) {
+    throw new Error('Profile contained no email');
+  }
 
-    const userId = profile.email.split('@')[0];
+  const userId = profile.email.split('@')[0];
 
-    const token = await ctx.tokenIssuer.issueToken({
-      claims: { sub: userId, ent: [`user:default/${userId}`] },
-    });
+  const token = await ctx.tokenIssuer.issueToken({
+    claims: {
+      sub: `user:default/${userId}`,
+      ent: [`user:default/${userId}`],
+    },
+  });
 
-    return { id: userId, token };
-  };
+  return { id: userId, token };
+};
 
 export type MicrosoftProviderOptions = {
   /**
@@ -247,13 +251,10 @@ export type MicrosoftProviderOptions = {
   /**
    * Configure sign-in for this provider, without it the provider can not be used to sign users in.
    */
-  /**
-   * Maps an auth result to a Backstage identity for the user.
-   *
-   * Set to `'email'` to use the default email-based sign in resolver, which will search
-   * the catalog for a single user entity that has a matching `microsoft.com/email` annotation.
-   */
   signIn?: {
+    /**
+     * Maps an auth result to a Backstage identity for the user.
+     */
     resolver?: SignInResolver<OAuthResult>;
   };
 };
@@ -266,6 +267,7 @@ export const createMicrosoftProvider = (
     globalConfig,
     config,
     tokenIssuer,
+    tokenManager,
     catalogApi,
     logger,
   }) =>
@@ -274,13 +276,16 @@ export const createMicrosoftProvider = (
       const clientSecret = envConfig.getString('clientSecret');
       const tenantId = envConfig.getString('tenantId');
 
-      const callbackUrl = `${globalConfig.baseUrl}/${providerId}/handler/frame`;
+      const customCallbackUrl = envConfig.getOptionalString('callbackUrl');
+      const callbackUrl =
+        customCallbackUrl ||
+        `${globalConfig.baseUrl}/${providerId}/handler/frame`;
       const authorizationUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize`;
       const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
 
       const catalogIdentityClient = new CatalogIdentityClient({
         catalogApi,
-        tokenIssuer,
+        tokenManager,
       });
 
       const authHandler: AuthHandler<OAuthResult> = options?.authHandler
@@ -316,6 +321,7 @@ export const createMicrosoftProvider = (
         disableRefresh: false,
         providerId,
         tokenIssuer,
+        callbackUrl,
       });
     });
 };

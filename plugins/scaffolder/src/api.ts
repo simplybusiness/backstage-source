@@ -15,22 +15,26 @@
  */
 
 import { EntityName } from '@backstage/catalog-model';
-import { JsonObject, JsonValue } from '@backstage/config';
-import { ResponseError } from '@backstage/errors';
-import { ScmIntegrationRegistry } from '@backstage/integration';
-import { Field, FieldValidation } from '@rjsf/core';
-import ObservableImpl from 'zen-observable';
-import { ListActionsResponse, ScaffolderTask, Status } from './types';
 import {
   createApiRef,
   DiscoveryApi,
-  IdentityApi,
-  Observable,
+  FetchApi,
 } from '@backstage/core-plugin-api';
+import { ResponseError } from '@backstage/errors';
+import { ScmIntegrationRegistry } from '@backstage/integration';
+import { JsonObject, JsonValue, Observable } from '@backstage/types';
+import { Field, FieldValidation } from '@rjsf/core';
+import qs from 'qs';
+import ObservableImpl from 'zen-observable';
+import { ListActionsResponse, ScaffolderTask, Status } from './types';
 
+/**
+ * Utility API reference for the {@link ScaffolderApi}.
+ *
+ * @public
+ */
 export const scaffolderApiRef = createApiRef<ScaffolderApi>({
   id: 'plugin.scaffolder.service',
-  description: 'Used to make requests towards the scaffolder backend',
 });
 
 type TemplateParameterSchema = {
@@ -59,6 +63,11 @@ export type CustomField = {
   validation: (data: JsonValue, field: FieldValidation) => void;
 };
 
+/**
+ * An API to interact with the scaffolder backend.
+ *
+ * @public
+ */
 export interface ScaffolderApi {
   getTemplateParameterSchema(
     templateName: EntityName,
@@ -68,10 +77,15 @@ export interface ScaffolderApi {
    * Executes the scaffolding of a component, given a template and its
    * parameter values.
    *
-   * @param templateName Name of the Template entity for the scaffolder to use. New project is going to be created out of this template.
-   * @param values Parameters for the template, e.g. name, description
+   * @param templateName - Name of the Template entity for the scaffolder to use. New project is going to be created out of this template.
+   * @param values - Parameters for the template, e.g. name, description
+   * @param secrets - Optional secrets to pass to as the secrets parameter to the template.
    */
-  scaffold(templateName: string, values: Record<string, any>): Promise<string>;
+  scaffold(
+    templateName: string,
+    values: Record<string, any>,
+    secrets?: Record<string, string>,
+  ): Promise<string>;
 
   getTask(taskId: string): Promise<ScaffolderTask>;
 
@@ -79,31 +93,35 @@ export interface ScaffolderApi {
     allowedHosts: string[];
   }): Promise<{ type: string; title: string; host: string }[]>;
 
-  // Returns a list of all installed actions.
+  /**
+   * Returns a list of all installed actions.
+   */
   listActions(): Promise<ListActionsResponse>;
 
-  streamLogs({
-    taskId,
-    after,
-  }: {
-    taskId: string;
-    after?: number;
-  }): Observable<LogEvent>;
+  streamLogs(options: { taskId: string; after?: number }): Observable<LogEvent>;
 }
 
+/**
+ * An API to interact with the scaffolder backend.
+ *
+ * @public
+ */
 export class ScaffolderClient implements ScaffolderApi {
   private readonly discoveryApi: DiscoveryApi;
-  private readonly identityApi: IdentityApi;
   private readonly scmIntegrationsApi: ScmIntegrationRegistry;
+  private readonly fetchApi: FetchApi;
+  private readonly useLongPollingLogs: boolean;
 
   constructor(options: {
     discoveryApi: DiscoveryApi;
-    identityApi: IdentityApi;
+    fetchApi: FetchApi;
     scmIntegrationsApi: ScmIntegrationRegistry;
+    useLongPollingLogs?: boolean;
   }) {
     this.discoveryApi = options.discoveryApi;
-    this.identityApi = options.identityApi;
+    this.fetchApi = options.fetchApi ?? { fetch };
     this.scmIntegrationsApi = options.scmIntegrationsApi;
+    this.useLongPollingLogs = options.useLongPollingLogs ?? false;
   }
 
   async getIntegrationsList(options: { allowedHosts: string[] }) {
@@ -122,21 +140,15 @@ export class ScaffolderClient implements ScaffolderApi {
   ): Promise<TemplateParameterSchema> {
     const { namespace, kind, name } = templateName;
 
-    const token = await this.identityApi.getIdToken();
     const baseUrl = await this.discoveryApi.getBaseUrl('scaffolder');
     const templatePath = [namespace, kind, name]
       .map(s => encodeURIComponent(s))
       .join('/');
     const url = `${baseUrl}/v2/templates/${templatePath}/parameter-schema`;
 
-    const response = await fetch(url, {
-      headers: {
-        ...(token && { Authorization: `Bearer ${token}` }),
-      },
-    });
-
+    const response = await this.fetchApi.fetch(url);
     if (!response.ok) {
-      throw ResponseError.fromResponse(response);
+      throw await ResponseError.fromResponse(response);
     }
 
     const schema: TemplateParameterSchema = await response.json();
@@ -147,22 +159,26 @@ export class ScaffolderClient implements ScaffolderApi {
    * Executes the scaffolding of a component, given a template and its
    * parameter values.
    *
-   * @param templateName Template name for the scaffolder to use. New project is going to be created out of this template.
-   * @param values Parameters for the template, e.g. name, description
+   * @param templateName - Template name for the scaffolder to use. New project is going to be created out of this template.
+   * @param values - Parameters for the template, e.g. name, description
+   * @param secrets - Optional secrets to pass to as the secrets parameter to the template.
    */
   async scaffold(
     templateName: string,
     values: Record<string, any>,
+    secrets: Record<string, string> = {},
   ): Promise<string> {
-    const token = await this.identityApi.getIdToken();
     const url = `${await this.discoveryApi.getBaseUrl('scaffolder')}/v2/tasks`;
-    const response = await fetch(url, {
+    const response = await this.fetchApi.fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(token && { Authorization: `Bearer ${token}` }),
       },
-      body: JSON.stringify({ templateName, values: { ...values } }),
+      body: JSON.stringify({
+        templateName,
+        values: { ...values },
+        secrets,
+      }),
     });
 
     if (response.status !== 201) {
@@ -176,21 +192,29 @@ export class ScaffolderClient implements ScaffolderApi {
   }
 
   async getTask(taskId: string) {
-    const token = await this.identityApi.getIdToken();
     const baseUrl = await this.discoveryApi.getBaseUrl('scaffolder');
     const url = `${baseUrl}/v2/tasks/${encodeURIComponent(taskId)}`;
-    const response = await fetch(url, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
 
+    const response = await this.fetchApi.fetch(url);
     if (!response.ok) {
-      throw ResponseError.fromResponse(response);
+      throw await ResponseError.fromResponse(response);
     }
 
     return await response.json();
   }
 
-  streamLogs({
+  streamLogs(options: {
+    taskId: string;
+    after?: number;
+  }): Observable<LogEvent> {
+    if (this.useLongPollingLogs) {
+      return this.streamLogsPolling(options);
+    }
+
+    return this.streamLogsEventStream(options);
+  }
+
+  private streamLogsEventStream({
     taskId,
     after,
   }: {
@@ -240,18 +264,51 @@ export class ScaffolderClient implements ScaffolderApi {
     });
   }
 
-  /**
-   * @returns ListActionsResponse containing all registered actions.
-   */
+  private streamLogsPolling({
+    taskId,
+    after: inputAfter,
+  }: {
+    taskId: string;
+    after?: number;
+  }): Observable<LogEvent> {
+    let after = inputAfter;
+
+    return new ObservableImpl(subscriber => {
+      this.discoveryApi.getBaseUrl('scaffolder').then(async baseUrl => {
+        while (!subscriber.closed) {
+          const url = `${baseUrl}/v2/tasks/${encodeURIComponent(
+            taskId,
+          )}/events?${qs.stringify({ after })}`;
+          const response = await this.fetchApi.fetch(url);
+
+          if (!response.ok) {
+            // wait for one second to not run into an
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            continue;
+          }
+
+          const logs = (await response.json()) as LogEvent[];
+
+          for (const event of logs) {
+            after = Number(event.id);
+
+            subscriber.next(event);
+
+            if (event.type === 'completion') {
+              subscriber.complete();
+              return;
+            }
+          }
+        }
+      });
+    });
+  }
+
   async listActions(): Promise<ListActionsResponse> {
     const baseUrl = await this.discoveryApi.getBaseUrl('scaffolder');
-    const token = await this.identityApi.getIdToken();
-    const response = await fetch(`${baseUrl}/v2/actions`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
-
+    const response = await this.fetchApi.fetch(`${baseUrl}/v2/actions`);
     if (!response.ok) {
-      throw ResponseError.fromResponse(response);
+      throw await ResponseError.fromResponse(response);
     }
 
     return await response.json();

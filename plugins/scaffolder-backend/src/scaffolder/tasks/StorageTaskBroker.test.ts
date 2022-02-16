@@ -17,8 +17,8 @@
 import { getVoidLogger, DatabaseManager } from '@backstage/backend-common';
 import { ConfigReader } from '@backstage/config';
 import { DatabaseTaskStore } from './DatabaseTaskStore';
-import { StorageTaskBroker, TaskAgent } from './StorageTaskBroker';
-import { TaskSecrets, TaskSpec, DbTaskEventRow } from './types';
+import { StorageTaskBroker, TaskManager } from './StorageTaskBroker';
+import { TaskSecrets, TaskSpec, SerializedTaskEvent } from './types';
 
 async function createStore(): Promise<DatabaseTaskStore> {
   const manager = DatabaseManager.fromConfig(
@@ -31,7 +31,9 @@ async function createStore(): Promise<DatabaseTaskStore> {
       },
     }),
   ).forPlugin('scaffolder');
-  return await DatabaseTaskStore.create(await manager.getClient());
+  return await DatabaseTaskStore.create({
+    database: await manager.getClient(),
+  });
 }
 
 describe('StorageTaskBroker', () => {
@@ -46,7 +48,7 @@ describe('StorageTaskBroker', () => {
   it('should claim a dispatched work item', async () => {
     const broker = new StorageTaskBroker(storage, logger);
     await broker.dispatch({} as TaskSpec);
-    await expect(broker.claim()).resolves.toEqual(expect.any(TaskAgent));
+    await expect(broker.claim()).resolves.toEqual(expect.any(TaskManager));
   });
 
   it('should wait for a dispatched work item', async () => {
@@ -56,7 +58,7 @@ describe('StorageTaskBroker', () => {
     await expect(Promise.race([promise, 'waiting'])).resolves.toBe('waiting');
 
     await broker.dispatch({} as TaskSpec);
-    await expect(promise).resolves.toEqual(expect.any(TaskAgent));
+    await expect(promise).resolves.toEqual(expect.any(TaskManager));
   });
 
   it('should dispatch multiple items and claim them in order', async () => {
@@ -68,9 +70,9 @@ describe('StorageTaskBroker', () => {
     const taskA = await broker.claim();
     const taskB = await broker.claim();
     const taskC = await broker.claim();
-    await expect(taskA).toEqual(expect.any(TaskAgent));
-    await expect(taskB).toEqual(expect.any(TaskAgent));
-    await expect(taskC).toEqual(expect.any(TaskAgent));
+    await expect(taskA).toEqual(expect.any(TaskManager));
+    await expect(taskB).toEqual(expect.any(TaskManager));
+    await expect(taskC).toEqual(expect.any(TaskManager));
     await expect(taskA.spec.steps[0].id).toBe('a');
     await expect(taskB.spec.steps[0].id).toBe('b');
     await expect(taskC.spec.steps[0].id).toBe('c');
@@ -92,13 +94,12 @@ describe('StorageTaskBroker', () => {
     expect(taskRow.status).toBe('completed');
   }, 10000);
 
-  it('should remove secrets after completing a task', async () => {
+  it('should remove secrets after picking up a task', async () => {
     const broker = new StorageTaskBroker(storage, logger);
     const dispatchResult = await broker.dispatch({} as TaskSpec, fakeSecrets);
-    const task = await broker.claim();
-    await task.complete('completed');
+    await broker.claim();
+
     const taskRow = await storage.getTask(dispatchResult.taskId);
-    expect(taskRow.status).toBe('completed');
     expect(taskRow.secrets).toBeUndefined();
   }, 10000);
 
@@ -111,24 +112,14 @@ describe('StorageTaskBroker', () => {
     expect(taskRow.status).toBe('failed');
   });
 
-  it('should remove secrets after failing a task', async () => {
-    const broker = new StorageTaskBroker(storage, logger);
-    const dispatchResult = await broker.dispatch({} as TaskSpec, fakeSecrets);
-    const task = await broker.claim();
-    await task.complete('failed');
-    const taskRow = await storage.getTask(dispatchResult.taskId);
-    expect(taskRow.status).toBe('failed');
-    expect(taskRow.secrets).toBeUndefined();
-  });
-
   it('multiple brokers should be able to observe a single task', async () => {
     const broker1 = new StorageTaskBroker(storage, logger);
     const broker2 = new StorageTaskBroker(storage, logger);
 
     const { taskId } = await broker1.dispatch({} as TaskSpec);
 
-    const logPromise = new Promise<DbTaskEventRow[]>(resolve => {
-      const observedEvents = new Array<DbTaskEventRow>();
+    const logPromise = new Promise<SerializedTaskEvent[]>(resolve => {
+      const observedEvents = new Array<SerializedTaskEvent>();
 
       broker2.observe({ taskId, after: undefined }, (_err, { events }) => {
         observedEvents.push(...events);

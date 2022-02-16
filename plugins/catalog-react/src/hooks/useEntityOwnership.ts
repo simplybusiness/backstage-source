@@ -28,62 +28,40 @@ import {
   identityApiRef,
   useApi,
 } from '@backstage/core-plugin-api';
-import jwtDecoder from 'jwt-decode';
 import { useMemo } from 'react';
-import { useAsync } from 'react-use';
+import useAsync from 'react-use/lib/useAsync';
 import { catalogApiRef } from '../api';
 import { getEntityRelations } from '../utils/getEntityRelations';
 
-// Takes a user ID from the identity, which can be on basically any form, and
-// returns an entity ref. E.g. if the input is "foo", it returns
-// "user:default/foo" to make sure it's a full ref.
-function extendUserId(id: string): string {
-  try {
-    const ref = parseEntityRef(id, {
-      defaultKind: 'User',
-      defaultNamespace: 'default',
-    });
-    return stringifyEntityRef(ref);
-  } catch {
-    return id;
-  }
-}
-
-// Takes the relevant parts of the Backstage identity, and translates them into
-// a list of entity refs on string form that represent the user's ownership
-// connections.
+/**
+ * Takes the relevant parts of the Backstage identity, and translates them into
+ * a list of entity refs on string form that represent the user's ownership
+ * connections.
+ *
+ * @public
+ * @deprecated Use `ownershipEntityRefs` from `identityApi.getBackstageIdentity()` instead.
+ *
+ * @param identityApi - The IdentityApi implementation
+ * @returns IdentityOwner refs as a string array
+ */
 export async function loadIdentityOwnerRefs(
   identityApi: IdentityApi,
 ): Promise<string[]> {
-  const id = identityApi.getUserId();
-  const token = await identityApi.getIdToken();
-  const result: string[] = [];
-
-  if (id) {
-    result.push(extendUserId(id));
-  }
-
-  if (token) {
-    try {
-      const decoded = jwtDecoder(token) as any;
-      if (decoded?.ent) {
-        [decoded.ent]
-          .flat()
-          .filter(x => typeof x === 'string')
-          .map(x => x.toLocaleLowerCase('en-US'))
-          .forEach(x => result.push(x));
-      }
-    } catch {
-      // ignore
-    }
-  }
-
-  return result;
+  const identity = await identityApi.getBackstageIdentity();
+  return identity.ownershipEntityRefs;
 }
 
-// Takes the relevant parts of the User entity corresponding to the Backstage
-// identity, and translates them into a list of entity refs on string form that
-// represent the user's ownership connections.
+/**
+ * Takes the relevant parts of the User entity corresponding to the Backstage
+ * identity, and translates them into a list of entity refs on string form that
+ * represent the user's ownership connections.
+ *
+ * @public
+ *
+ * @param catalogApi - The Catalog API implementation
+ * @param identityOwnerRefs - List of identity owner refs as strings
+ * @returns OwnerRefs as a string array
+ */
 export async function loadCatalogOwnerRefs(
   catalogApi: CatalogApi,
   identityOwnerRefs: string[],
@@ -113,6 +91,10 @@ export async function loadCatalogOwnerRefs(
  * owner of a given entity. When the hook is initially mounted, the loading
  * flag will be true and the results returned from the function will always be
  * false.
+ *
+ * @public
+ *
+ * @returns a function that checks if the signed in user owns an entity
  */
 export function useEntityOwnership(): {
   loading: boolean;
@@ -123,9 +105,12 @@ export function useEntityOwnership(): {
 
   // Trigger load only on mount
   const { loading, value: refs } = useAsync(async () => {
-    const identityRefs = await loadIdentityOwnerRefs(identityApi);
-    const catalogRefs = await loadCatalogOwnerRefs(catalogApi, identityRefs);
-    return new Set([...identityRefs, ...catalogRefs]);
+    const { ownershipEntityRefs } = await identityApi.getBackstageIdentity();
+    const catalogRefs = await loadCatalogOwnerRefs(
+      catalogApi,
+      ownershipEntityRefs,
+    );
+    return new Set([...ownershipEntityRefs, ...catalogRefs]);
   }, []);
 
   const isOwnedEntity = useMemo(() => {

@@ -17,8 +17,7 @@
 import {
   Entity,
   EntityName,
-  ENTITY_DEFAULT_NAMESPACE,
-  serializeEntityRef,
+  DEFAULT_NAMESPACE,
 } from '@backstage/catalog-model';
 
 export function formatEntityRefTitle(
@@ -40,15 +39,14 @@ export function formatEntityRefTitle(
     name = entityRef.name;
   }
 
-  if (namespace === ENTITY_DEFAULT_NAMESPACE) {
+  if (namespace === DEFAULT_NAMESPACE) {
     namespace = undefined;
   }
 
-  kind = kind.toLowerCase();
-
-  return `${serializeEntityRef({
-    kind: defaultKind && defaultKind.toLowerCase() === kind ? undefined : kind,
-    name,
-    namespace,
-  })}`;
+  kind = kind.toLocaleLowerCase('en-US');
+  kind =
+    defaultKind && defaultKind.toLocaleLowerCase('en-US') === kind
+      ? undefined
+      : kind;
+  return `${kind ? `${kind}:` : ''}${namespace ? `${namespace}/` : ''}${name}`;
 }

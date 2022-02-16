@@ -23,6 +23,8 @@ import {
   Page,
   SupportButton,
 } from '@backstage/core-components';
+import { Entity } from '@backstage/catalog-model';
+import { TemplateEntityV1beta2 } from '@backstage/plugin-scaffolder-common';
 import { useRouteRef } from '@backstage/core-plugin-api';
 import {
   EntityKindPicker,
@@ -32,10 +34,12 @@ import {
   UserListPicker,
 } from '@backstage/plugin-catalog-react';
 import { makeStyles } from '@material-ui/core';
-import React from 'react';
+import React, { ComponentType } from 'react';
 import { registerComponentRouteRef } from '../../routes';
 import { TemplateList } from '../TemplateList';
 import { TemplateTypePicker } from '../TemplateTypePicker';
+import { catalogEntityCreatePermission } from '@backstage/plugin-catalog-common';
+import { usePermission } from '@backstage/plugin-permission-react';
 
 const useStyles = makeStyles(theme => ({
   contentWrapper: {
@@ -46,10 +50,32 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
-export const ScaffolderPageContents = () => {
-  const styles = useStyles();
+export type ScaffolderPageProps = {
+  TemplateCardComponent?:
+    | ComponentType<{ template: TemplateEntityV1beta2 }>
+    | undefined;
+  groups?: Array<{
+    title?: string;
+    titleComponent?: React.ReactNode;
+    filter: (entity: Entity) => boolean;
+  }>;
+};
 
+export const ScaffolderPageContents = ({
+  TemplateCardComponent,
+  groups,
+}: ScaffolderPageProps) => {
+  const styles = useStyles();
   const registerComponentLink = useRouteRef(registerComponentRouteRef);
+  const otherTemplatesGroup = {
+    title: groups ? 'Other Templates' : 'Templates',
+    filter: (entity: Entity) => {
+      const filtered = (groups ?? []).map(group => group.filter(entity));
+      return !filtered.some(result => result === true);
+    },
+  };
+
+  const { allowed } = usePermission(catalogEntityCreatePermission);
 
   return (
     <Page themeId="home">
@@ -64,10 +90,12 @@ export const ScaffolderPageContents = () => {
       />
       <Content>
         <ContentHeader title="Available Templates">
-          <CreateButton
-            title="Register Existing Component"
-            to={registerComponentLink && registerComponentLink()}
-          />
+          {allowed && (
+            <CreateButton
+              title="Register Existing Component"
+              to={registerComponentLink && registerComponentLink()}
+            />
+          )}
           <SupportButton>
             Create new software components using standard templates. Different
             templates create different kinds of components (services, websites,
@@ -87,7 +115,19 @@ export const ScaffolderPageContents = () => {
             <EntityTagPicker />
           </div>
           <div>
-            <TemplateList />
+            {groups &&
+              groups.map((group, index) => (
+                <TemplateList
+                  key={index}
+                  TemplateCardComponent={TemplateCardComponent}
+                  group={group}
+                />
+              ))}
+            <TemplateList
+              key="other"
+              TemplateCardComponent={TemplateCardComponent}
+              group={otherTemplatesGroup}
+            />
           </div>
         </div>
       </Content>
@@ -95,8 +135,14 @@ export const ScaffolderPageContents = () => {
   );
 };
 
-export const ScaffolderPage = () => (
+export const ScaffolderPage = ({
+  TemplateCardComponent,
+  groups,
+}: ScaffolderPageProps) => (
   <EntityListProvider>
-    <ScaffolderPageContents />
+    <ScaffolderPageContents
+      TemplateCardComponent={TemplateCardComponent}
+      groups={groups}
+    />
   </EntityListProvider>
 );

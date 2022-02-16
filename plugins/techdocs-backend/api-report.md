@@ -8,14 +8,16 @@ import { Config } from '@backstage/config';
 import { DocumentCollator } from '@backstage/search-common';
 import express from 'express';
 import { GeneratorBuilder } from '@backstage/techdocs-common';
-import { IndexableDocument } from '@backstage/search-common';
 import { Knex } from 'knex';
 import { Logger as Logger_2 } from 'winston';
+import { Permission } from '@backstage/plugin-permission-common';
+import { PluginCacheManager } from '@backstage/backend-common';
 import { PluginEndpointDiscovery } from '@backstage/backend-common';
 import { PreparerBuilder } from '@backstage/techdocs-common';
 import { PublisherBase } from '@backstage/techdocs-common';
+import { TechDocsDocument } from '@backstage/techdocs-common';
+import { TokenManager } from '@backstage/backend-common';
 
-// Warning: (ae-forgotten-export) The symbol "RouterOptions" needs to be exported by the entry point index.d.ts
 // Warning: (ae-missing-release-tag) "createRouter" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
 //
 // @public (undocumented)
@@ -25,19 +27,8 @@ export function createRouter(options: RouterOptions): Promise<express.Router>;
 //
 // @public (undocumented)
 export class DefaultTechDocsCollator implements DocumentCollator {
-  constructor({
-    discovery,
-    locationTemplate,
-    logger,
-    catalogClient,
-    parallelismLimit,
-  }: {
-    discovery: PluginEndpointDiscovery;
-    logger: Logger_2;
-    locationTemplate?: string;
-    catalogClient?: CatalogApi;
-    parallelismLimit?: number;
-  });
+  // @deprecated
+  constructor(options: TechDocsCollatorOptions);
   // (undocumented)
   protected applyArgsToFormat(
     format: string,
@@ -48,28 +39,64 @@ export class DefaultTechDocsCollator implements DocumentCollator {
   // (undocumented)
   execute(): Promise<TechDocsDocument[]>;
   // (undocumented)
+  static fromConfig(
+    config: Config,
+    options: TechDocsCollatorOptions,
+  ): DefaultTechDocsCollator;
+  // (undocumented)
   protected locationTemplate: string;
   // (undocumented)
   readonly type: string;
+  // (undocumented)
+  readonly visibilityPermission: Permission;
 }
 
-// Warning: (ae-missing-release-tag) "TechDocsDocument" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
+// Warning: (ae-missing-release-tag) "OutOfTheBoxDeploymentOptions" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
+//
+// @public
+export type OutOfTheBoxDeploymentOptions = {
+  preparers: PreparerBuilder;
+  generators: GeneratorBuilder;
+  publisher: PublisherBase;
+  logger: Logger_2;
+  discovery: PluginEndpointDiscovery;
+  database?: Knex;
+  config: Config;
+  cache: PluginCacheManager;
+};
+
+// Warning: (ae-missing-release-tag) "RecommendedDeploymentOptions" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
+//
+// @public
+export type RecommendedDeploymentOptions = {
+  publisher: PublisherBase;
+  logger: Logger_2;
+  discovery: PluginEndpointDiscovery;
+  config: Config;
+  cache: PluginCacheManager;
+};
+
+// Warning: (ae-missing-release-tag) "RouterOptions" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
+//
+// @public
+export type RouterOptions =
+  | RecommendedDeploymentOptions
+  | OutOfTheBoxDeploymentOptions;
+
+// Warning: (ae-missing-release-tag) "TechDocsCollatorOptions" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
 //
 // @public (undocumented)
-export interface TechDocsDocument extends IndexableDocument {
-  // (undocumented)
-  kind: string;
-  // (undocumented)
-  lifecycle: string;
-  // (undocumented)
-  name: string;
-  // (undocumented)
-  namespace: string;
-  // (undocumented)
-  owner: string;
-}
+export type TechDocsCollatorOptions = {
+  discovery: PluginEndpointDiscovery;
+  logger: Logger_2;
+  tokenManager: TokenManager;
+  locationTemplate?: string;
+  catalogClient?: CatalogApi;
+  parallelismLimit?: number;
+  legacyPathCasing?: boolean;
+};
+
+export { TechDocsDocument };
 
 export * from '@backstage/techdocs-common';
-
-// (No @packageDocumentation comment for this package)
 ```

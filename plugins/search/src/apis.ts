@@ -25,7 +25,6 @@ import qs from 'qs';
 
 export const searchApiRef = createApiRef<SearchApi>({
   id: 'plugin.search.queryservice',
-  description: 'Used to make requests against the search API',
 });
 
 export interface SearchApi {
@@ -45,7 +44,7 @@ export class SearchClient implements SearchApi {
   }
 
   async query(query: SearchQuery): Promise<SearchResultSet> {
-    const token = await this.identityApi.getIdToken();
+    const { token } = await this.identityApi.getCredentials();
     const queryString = qs.stringify(query);
     const url = `${await this.discoveryApi.getBaseUrl(
       'search/query',

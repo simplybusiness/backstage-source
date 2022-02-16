@@ -19,6 +19,7 @@ import {
   Box,
   Checkbox,
   FormControlLabel,
+  makeStyles,
   TextField,
   Typography,
 } from '@material-ui/core';
@@ -32,19 +33,43 @@ import { EntityOwnerFilter } from '../../filters';
 import { getEntityRelations } from '../../utils';
 import { formatEntityRefTitle } from '../EntityRefLink';
 
+/** @public */
+export type CatalogReactEntityOwnerPickerClassKey = 'input';
+
+const useStyles = makeStyles(
+  {
+    input: {},
+  },
+  {
+    name: 'CatalogReactEntityOwnerPicker',
+  },
+);
+
 const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
 const checkedIcon = <CheckBoxIcon fontSize="small" />;
 
+/** @public */
 export const EntityOwnerPicker = () => {
+  const classes = useStyles();
   const { updateFilters, backendEntities, filters, queryParameters } =
     useEntityListProvider();
 
-  const queryParamOwners = [queryParameters.owners]
-    .flat()
-    .filter(Boolean) as string[];
+  const queryParamOwners = useMemo(
+    () => [queryParameters.owners].flat().filter(Boolean) as string[],
+    [queryParameters],
+  );
+
   const [selectedOwners, setSelectedOwners] = useState(
     queryParamOwners.length ? queryParamOwners : filters.owners?.values ?? [],
   );
+
+  // Set selected owners on query parameter updates; this happens at initial page load and from
+  // external updates to the page location.
+  useEffect(() => {
+    if (queryParamOwners.length) {
+      setSelectedOwners(queryParamOwners);
+    }
+  }, [queryParamOwners]);
 
   useEffect(() => {
     updateFilters({
@@ -75,7 +100,7 @@ export const EntityOwnerPicker = () => {
   return (
     <Box pb={1} pt={1}>
       <Typography variant="button">Owner</Typography>
-      <Autocomplete<string>
+      <Autocomplete
         multiple
         aria-label="Owner"
         options={availableOwners}
@@ -95,7 +120,9 @@ export const EntityOwnerPicker = () => {
         )}
         size="small"
         popupIcon={<ExpandMoreIcon data-testid="owner-picker-expand" />}
-        renderInput={params => <TextField {...params} variant="outlined" />}
+        renderInput={params => (
+          <TextField {...params} className={classes.input} variant="outlined" />
+        )}
       />
     </Box>
   );

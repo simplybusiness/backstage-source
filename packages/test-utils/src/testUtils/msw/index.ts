@@ -14,14 +14,4 @@
  * limitations under the License.
  */
 
-export const msw = {
-  setupDefaultHandlers: (worker: {
-    listen: (t: any) => void;
-    close: () => void;
-    resetHandlers: () => void;
-  }) => {
-    beforeAll(() => worker.listen({ onUnhandledRequest: 'error' }));
-    afterAll(() => worker.close());
-    afterEach(() => worker.resetHandlers());
-  },
-};
+export { setupRequestMockHandlers } from './setupRequestMockHandlers';
