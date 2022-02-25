@@ -17,8 +17,8 @@
 import { EntityName } from '@backstage/catalog-model';
 import { SearchContextProvider, useSearch } from '@backstage/plugin-search';
 import {
+  makeStyles,
   CircularProgress,
-  Grid,
   IconButton,
   InputAdornment,
   TextField,
@@ -29,6 +29,12 @@ import React, { ChangeEvent, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import useDebounce from 'react-use/lib/useDebounce';
 import { DocsResultListItem } from '../../components/DocsResultListItem';
+
+const useStyles = makeStyles({
+  root: {
+    width: '100%',
+  },
+});
 
 type TechDocsSearchProps = {
   entityId: EntityName;
@@ -58,8 +64,10 @@ const TechDocsSearchBar = ({
   const {
     term,
     setTerm,
+    setFilters,
     result: { loading, value: searchVal },
   } = useSearch();
+  const classes = useStyles();
   const [options, setOptions] = useState<any[]>([]);
   useEffect(() => {
     let mounted = true;
@@ -80,6 +88,20 @@ const TechDocsSearchBar = ({
 
   useDebounce(() => setTerm(value), debounceTime, [value]);
 
+  // Update the filter context when the entityId changes, e.g. when the search
+  // bar continues to be rendered, navigating between different TechDocs sites.
+  const { kind, name, namespace } = entityId;
+  useEffect(() => {
+    setFilters(prevFilters => {
+      return {
+        ...prevFilters,
+        kind,
+        namespace,
+        name,
+      };
+    });
+  }, [kind, namespace, name, setFilters]);
+
   const handleQuery = (e: ChangeEvent<HTMLInputElement>) => {
     if (!open) {
       setOpen(true);
@@ -95,67 +117,66 @@ const TechDocsSearchBar = ({
   };
 
   return (
-    <Grid item xs={12}>
-      <Autocomplete
-        data-testid="techdocs-search-bar"
-        size="small"
-        open={open}
-        getOptionLabel={() => ''}
-        filterOptions={x => {
-          return x; // This is needed to get renderOption to be called after options change. Bug in material-ui?
-        }}
-        onClose={() => {
-          setOpen(false);
-        }}
-        onFocus={() => {
-          setOpen(true);
-        }}
-        onChange={handleSelection}
-        blurOnSelect
-        noOptionsText="No results found"
-        value={null}
-        options={options}
-        renderOption={({ document }) => (
-          <DocsResultListItem
-            result={document}
-            lineClamp={3}
-            asListItem={false}
-            asLink={false}
-            title={document.title}
-          />
-        )}
-        loading={loading}
-        renderInput={params => (
-          <TextField
-            {...params}
-            data-testid="techdocs-search-bar-input"
-            variant="outlined"
-            fullWidth
-            placeholder={`Search ${entityId.name} docs`}
-            value={value}
-            onChange={handleQuery}
-            InputProps={{
-              ...params.InputProps,
-              startAdornment: (
-                <InputAdornment position="start">
-                  <IconButton aria-label="Query" disabled>
-                    <SearchIcon />
-                  </IconButton>
-                </InputAdornment>
-              ),
-              endAdornment: (
-                <React.Fragment>
-                  {loading ? (
-                    <CircularProgress color="inherit" size={20} />
-                  ) : null}
-                  {params.InputProps.endAdornment}
-                </React.Fragment>
-              ),
-            }}
-          />
-        )}
-      />
-    </Grid>
+    <Autocomplete
+      classes={{ root: classes.root }}
+      data-testid="techdocs-search-bar"
+      size="small"
+      open={open}
+      getOptionLabel={() => ''}
+      filterOptions={x => {
+        return x; // This is needed to get renderOption to be called after options change. Bug in material-ui?
+      }}
+      onClose={() => {
+        setOpen(false);
+      }}
+      onFocus={() => {
+        setOpen(true);
+      }}
+      onChange={handleSelection}
+      blurOnSelect
+      noOptionsText="No results found"
+      value={null}
+      options={options}
+      renderOption={({ document }) => (
+        <DocsResultListItem
+          result={document}
+          lineClamp={3}
+          asListItem={false}
+          asLink={false}
+          title={document.title}
+        />
+      )}
+      loading={loading}
+      renderInput={params => (
+        <TextField
+          {...params}
+          data-testid="techdocs-search-bar-input"
+          variant="outlined"
+          fullWidth
+          placeholder={`Search ${entityId.name} docs`}
+          value={value}
+          onChange={handleQuery}
+          InputProps={{
+            ...params.InputProps,
+            startAdornment: (
+              <InputAdornment position="start">
+                <IconButton aria-label="Query" disabled>
+                  <SearchIcon />
+                </IconButton>
+              </InputAdornment>
+            ),
+            endAdornment: (
+              <React.Fragment>
+                {loading ? (
+                  <CircularProgress color="inherit" size={20} />
+                ) : null}
+                {params.InputProps.endAdornment}
+              </React.Fragment>
+            ),
+          }}
+        />
+      )}
+    />
   );
 };
 

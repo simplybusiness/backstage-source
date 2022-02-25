@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { parseEntityRef } from '@backstage/catalog-model';
 import {
   Content,
   ErrorPage,
@@ -48,7 +49,7 @@ import React, { memo, useEffect, useMemo, useState } from 'react';
 import { generatePath, useNavigate, useParams } from 'react-router';
 import useInterval from 'react-use/lib/useInterval';
 import { rootRouteRef } from '../../routes';
-import { Status, TaskOutput } from '../../types';
+import { ScaffolderTaskStatus, ScaffolderTaskOutput } from '../../types';
 import { useTaskEventStream } from '../hooks/useEventStream';
 import { TaskPageLinks } from './TaskPageLinks';
 
@@ -85,7 +86,7 @@ const useStyles = makeStyles((theme: Theme) =>
 type TaskStep = {
   id: string;
   name: string;
-  status: Status;
+  status: ScaffolderTaskStatus;
   startedAt?: string;
   endedAt?: string;
 };
@@ -216,7 +217,11 @@ export const TaskStatusStepper = memo(
   },
 );
 
-const hasLinks = ({ entityRef, remoteUrl, links = [] }: TaskOutput): boolean =>
+const hasLinks = ({
+  entityRef,
+  remoteUrl,
+  links = [],
+}: ScaffolderTaskOutput): boolean =>
   !!(entityRef || remoteUrl || links.length > 0);
 
 /**
@@ -291,8 +296,9 @@ export const TaskPage = ({ loadingText }: TaskPageProps) => {
   const { output } = taskStream;
 
   const handleStartOver = () => {
-    if (!taskStream.task || !taskStream.task?.spec.metadata?.name) {
+    if (!taskStream.task || !taskStream.task?.spec.templateInfo?.entityRef) {
       navigate(generatePath(rootLink()));
+      return;
     }
 
     const formData =
@@ -300,13 +306,17 @@ export const TaskPage = ({ loadingText }: TaskPageProps) => {
         ? taskStream.task!.spec.values
         : taskStream.task!.spec.parameters;
 
+    const { name } = parseEntityRef(
+      taskStream.task!.spec.templateInfo?.entityRef,
+    );
+
     navigate(
       generatePath(
         `${rootLink()}/templates/:templateName?${qs.stringify({
           formData: JSON.stringify(formData),
         })}`,
         {
-          templateName: taskStream.task!.spec.metadata!.name,
+          templateName: name,
         },
       ),
     );
