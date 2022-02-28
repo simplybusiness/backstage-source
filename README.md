@@ -1,3 +1,7 @@
+To contribute to Backstage, base your changes to the main branch: https://github.com/simplybusiness/backstage-source/tree/main
+
+The master branch has changes that are relevant internally at Simply Business which means it is incompatible with the upstream Backstage repository.
+
 ![headline](docs/assets/headline.png)
 
 # [Backstage](https://backstage.io)
