@@ -15,8 +15,11 @@
  */
 
 export * from './Reader';
-export * from './TechDocsPage';
-export * from './TechDocsPageHeader';
+export type {
+  TechDocsReaderPageProps,
+  TechDocsReaderPageRenderFunction,
+} from './TechDocsReaderPage';
+export * from './TechDocsReaderPageHeader';
 export * from './TechDocsStateIndicator';
 
 /**
@@ -31,4 +34,3 @@ export * from './TechDocsStateIndicator';
  * todo: Make public or stop exporting (ctrl+f "altReaderExperiments")
  * @internal
  */
-export { TechDocsSearch } from './TechDocsSearch';

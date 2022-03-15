@@ -17,24 +17,19 @@
 import { JsonValue, JsonObject } from '@backstage/types';
 
 /**
- * Metadata about the Template that was the originator of a scaffolder task, as
- * stored in the database.
- *
- * @public
- * @deprecated use templateInfo on the spec instead
- */
-export type TemplateMetadata = {
-  name: string;
-};
-
-/**
  * Information about a template that is stored on a task specification.
  * Includes a stringified entityRef, and the baseUrl which is usually the relative path of the template definition
  *
  * @public
  */
 export type TemplateInfo = {
+  /**
+   * The entityRef of the template
+   */
   entityRef: string;
+  /**
+   * Where the template is stored, so we can resolve relative paths for things like `fetch:template` paths.
+   */
   baseUrl?: string;
 };
 
@@ -44,31 +39,26 @@ export type TemplateInfo = {
  * @public
  */
 export interface TaskStep {
+  /**
+   * A unqiue identifier for this step.
+   */
   id: string;
+  /**
+   * A display name to show the user.
+   */
   name: string;
+  /**
+   * The underlying action ID that will be called as part of running this step.
+   */
   action: string;
+  /**
+   * Additional data that will be passed to the action.
+   */
   input?: JsonObject;
+  /**
+   * When this is false, or if the templated value string evaluates to something that is falsy the step will be skipped.
+   */
   if?: string | boolean;
-}
-
-/**
- * A scaffolder task as stored in the database, generated from a v1beta2
- * apiVersion Template.
- *
- * @public
- * @deprecated Please convert your templates to TaskSpecV1beta3 on apiVersion
- *             scaffolder.backstage.io/v1beta3
- */
-export interface TaskSpecV1beta2 {
-  apiVersion: 'backstage.io/v1beta2';
-  /** @deprecated use templateInfo.baseUrl instead */
-  baseUrl?: string;
-  values: JsonObject;
-  steps: TaskStep[];
-  output: { [name: string]: string };
-  /** @deprecated use templateInfo instead */
-  metadata?: TemplateMetadata;
-  templateInfo?: TemplateInfo;
 }
 
 /**
@@ -78,14 +68,28 @@ export interface TaskSpecV1beta2 {
  * @public
  */
 export interface TaskSpecV1beta3 {
+  /**
+   * The apiVersion string of the TaskSpec.
+   */
   apiVersion: 'scaffolder.backstage.io/v1beta3';
-  /** @deprecated use templateInfo.baseUrl instead */
-  baseUrl?: string;
+  /**
+   * This is a JSONSchema which is used to render a form in the frontend
+   * to collect user input and validate it against that schema. This can then be used in the `steps` part below to template
+   * variables passed from the user into each action in the template.
+   */
   parameters: JsonObject;
+  /**
+   * A list of steps to be executed in sequence which are defined by the template. These steps are a list of the underlying
+   * javascript action and some optional input parameters that may or may not have been collected from the end user.
+   */
   steps: TaskStep[];
+  /**
+   * The output is an object where template authors can pull out information from template actions and return them in a known standard way.
+   */
   output: { [name: string]: JsonValue };
-  /** @deprecated use templateInfo instead */
-  metadata?: TemplateMetadata;
+  /**
+   * Some information about the template that is stored on the task spec.
+   */
   templateInfo?: TemplateInfo;
 }
 
@@ -94,4 +98,4 @@ export interface TaskSpecV1beta3 {
  *
  * @public
  */
-export type TaskSpec = TaskSpecV1beta2 | TaskSpecV1beta3;
+export type TaskSpec = TaskSpecV1beta3;

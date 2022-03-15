@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 import { Entity, RELATION_OWNED_BY } from '@backstage/catalog-model';
-import { TemplateEntityV1beta2 } from '@backstage/plugin-scaffolder-common';
+import { TemplateEntityV1beta3 } from '@backstage/plugin-scaffolder-common';
 import {
   ScmIntegrationIcon,
   scmIntegrationsApiRef,
 } from '@backstage/integration-react';
 import {
   EntityRefLinks,
+  FavoriteEntity,
   getEntityRelations,
   getEntitySourceLocation,
 } from '@backstage/plugin-catalog-react';
@@ -41,11 +42,13 @@ import {
 } from '@material-ui/core';
 import WarningIcon from '@material-ui/icons/Warning';
 import React from 'react';
-import { generatePath } from 'react-router';
-import { rootRouteRef } from '../../routes';
-import { FavouriteTemplate } from '../FavouriteTemplate/FavouriteTemplate';
+import { selectedTemplateRouteRef } from '../../routes';
 
-import { Button, ItemCardHeader } from '@backstage/core-components';
+import {
+  Button,
+  ItemCardHeader,
+  MarkdownContent,
+} from '@backstage/core-components';
 import { useApi, useRouteRef } from '@backstage/core-plugin-api';
 
 const useStyles = makeStyles(theme => ({
@@ -75,6 +78,13 @@ const useStyles = makeStyles(theme => ({
   leftButton: {
     marginRight: 'auto',
   },
+  starButton: {
+    position: 'absolute',
+    top: theme.spacing(0.5),
+    right: theme.spacing(0.5),
+    padding: '0.25rem',
+    color: '#fff',
+  },
 }));
 
 const useDeprecationStyles = makeStyles(theme => ({
@@ -90,7 +100,7 @@ const useDeprecationStyles = makeStyles(theme => ({
 }));
 
 export type TemplateCardProps = {
-  template: TemplateEntityV1beta2;
+  template: TemplateEntityV1beta3;
   deprecated?: boolean;
 };
 
@@ -103,7 +113,7 @@ type TemplateProps = {
 };
 
 const getTemplateCardProps = (
-  template: TemplateEntityV1beta2,
+  template: TemplateEntityV1beta3,
 ): TemplateProps & { key: string } => {
   return {
     key: template.metadata.uid!,
@@ -141,7 +151,7 @@ const DeprecationWarning = () => {
 
 export const TemplateCard = ({ template, deprecated }: TemplateCardProps) => {
   const backstageTheme = useTheme<BackstageTheme>();
-  const rootLink = useRouteRef(rootRouteRef);
+  const templateRoute = useRouteRef(selectedTemplateRouteRef);
   const templateProps = getTemplateCardProps(template);
   const ownedByRelations = getEntityRelations(
     template as Entity,
@@ -152,9 +162,7 @@ export const TemplateCard = ({ template, deprecated }: TemplateCardProps) => {
     : 'other';
   const theme = backstageTheme.getPageTheme({ themeId });
   const classes = useStyles({ backgroundImage: theme.backgroundImage });
-  const href = generatePath(`${rootLink()}/templates/:templateName`, {
-    templateName: templateProps.name,
-  });
+  const href = templateRoute({ templateName: templateProps.name });
 
   const scmIntegrationsApi = useApi(scmIntegrationsApiRef);
   const sourceLocation = getEntitySourceLocation(template, scmIntegrationsApi);
@@ -162,7 +170,7 @@ export const TemplateCard = ({ template, deprecated }: TemplateCardProps) => {
   return (
     <Card>
       <CardMedia className={classes.cardHeader}>
-        <FavouriteTemplate entity={template} />
+        <FavoriteEntity className={classes.starButton} entity={template} />
         {deprecated && <DeprecationWarning />}
         <ItemCardHeader
           title={templateProps.title}
@@ -175,7 +183,7 @@ export const TemplateCard = ({ template, deprecated }: TemplateCardProps) => {
           <Typography variant="body2" className={classes.label}>
             Description
           </Typography>
-          {templateProps.description}
+          <MarkdownContent content={templateProps.description} />
         </Box>
         <Box className={classes.box}>
           <Typography variant="body2" className={classes.label}>

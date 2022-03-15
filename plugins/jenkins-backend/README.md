@@ -31,17 +31,17 @@ import { CatalogClient } from '@backstage/catalog-client';
 import { Router } from 'express';
 import { PluginEnvironment } from '../types';
 
-export default async function createPlugin({
-  logger,
-  config,
-  discovery,
-}: PluginEnvironment): Promise<Router> {
-  const catalog = new CatalogClient({ discoveryApi: discovery });
+export default async function createPlugin(
+  env: PluginEnvironment,
+): Promise<Router> {
+  const catalog = new CatalogClient({
+    discoveryApi: env.discovery,
+  });
 
   return await createRouter({
-    logger,
+    logger: env.logger,
     jenkinsInfoProvider: DefaultJenkinsInfoProvider.fromConfig({
-      config,
+      config: env.config,
       catalog,
     }),
   });
@@ -166,7 +166,7 @@ class AcmeJenkinsInfoProvider implements JenkinsInfoProvider {
     const PAAS_ANNOTATION = 'acme.example.com/paas-project-name';
 
     // lookup pass-project-name from entity annotation
-    const entity = await this.catalog.getEntityByName(opt.entityRef);
+    const entity = await this.catalog.getEntityByRef(opt.entityRef);
     if (!entity) {
       throw new Error(
         `Couldn't find entity with name: ${stringifyEntityRef(opt.entityRef)}`,

@@ -27,9 +27,11 @@ sign-in resolvers and set them for any of the Authentication providers inside
 `@backstage/plugin-auth-backend` plugin.
 
 ```ts
-export default async function createPlugin({
-  ...
-}: PluginEnvironment): Promise<Router> {
+import { DEFAULT_NAMESPACE, stringifyEntityRef } from '@backstage/catalog-model';
+
+export default async function createPlugin(
+  env: PluginEnvironment,
+): Promise<Router> {
   return await createRouter({
     ...
     providerFactories: {
@@ -38,22 +40,31 @@ export default async function createPlugin({
           resolver: async ({ profile: { email } }, ctx) => {
             // Call a custom validator function that checks that the email is
             // valid and on our own company's domain, and throws an Error if it
-            // isn't
+            // isn't.
+            // TODO: Implement this function
             validateEmail(email);
 
             // List of entity references that denote the identity and
             // membership of the user
-            const ent = [];
+            const ent: string[] = [];
 
             // Let's use the username in the email ID as the user's default
             // unique identifier inside Backstage.
             const [id] = email.split('@');
-            ent.push(`User:default/${id}`)
+            ent.push(stringifyEntityRef({
+              kind: 'User',
+              namespace: DEFAULT_NAMESPACE,
+              name: id,
+            }));
 
             // Let's call the internal LDAP provider to get a list of groups
             // that the user belongs to, and add those to the list as well
             const ldapGroups = await getLdapGroups(email);
-            ldapGroups.forEach(group => ent.push(`Group:default/${group}`))
+            ldapGroups.forEach(group => ent.push(stringifyEntityRef({
+              kind: 'Group',
+              namespace: DEFAULT_NAMESPACE,
+              name: group,
+            })));
 
             // Issue the token containing the entity claims
             const token = await ctx.tokenIssuer.issueToken({
@@ -94,13 +105,13 @@ matching `google.com/email` annotation.
 
 It can be enabled like this
 
-```tsx
+```ts
 // File: packages/backend/src/plugins/auth.ts
 import { googleEmailSignInResolver, createGoogleProvider } from '@backstage/plugin-auth-backend';
 
-export default async function createPlugin({
-  ...
-}: PluginEnvironment): Promise<Router> {
+export default async function createPlugin(
+  env: PluginEnvironment,
+): Promise<Router> {
   return await createRouter({
     ...
     providerFactories: {
@@ -119,9 +130,9 @@ can do this using the `CatalogIdentityClient` provided as context to Sign-In
 resolvers:
 
 ```ts
-export default async function createPlugin({
-  ...
-}: PluginEnvironment): Promise<Router> {
+export default async function createPlugin(
+  env: PluginEnvironment,
+): Promise<Router> {
   return await createRouter({
     ...
     providerFactories: {
@@ -163,11 +174,11 @@ display name and profile picture.
 This is also the place where you can do authorization and validation of the user
 and throw errors if the user should not be allowed access in Backstage.
 
-```tsx
+```ts
 // File: packages/backend/src/plugins/auth.ts
-export default async function createPlugin({
-  ...
-}: PluginEnvironment): Promise<Router> {
+export default async function createPlugin(
+  env: PluginEnvironment,
+): Promise<Router> {
   return await createRouter({
     ...
     providerFactories: {

@@ -15,6 +15,7 @@
  */
 
 import {
+  ANNOTATION_EDIT_URL,
   ANNOTATION_LOCATION,
   DEFAULT_NAMESPACE,
   stringifyEntityRef,
@@ -32,7 +33,6 @@ import {
 } from '@backstage/integration-react';
 import {
   catalogApiRef,
-  getEntityMetadataEditUrl,
   getEntitySourceLocation,
   useEntity,
 } from '@backstage/plugin-catalog-react';
@@ -72,7 +72,7 @@ const useStyles = makeStyles({
 });
 
 /**
- * Props for {@link AboutCard}.
+ * Props for {@link EntityAboutCard}.
  *
  * @public
  */
@@ -81,8 +81,7 @@ export interface AboutCardProps {
 }
 
 /**
- * @public
- * @deprecated Please use EntityAboutCard instead
+ * Exported publicly via the EntityAboutCard
  */
 export function AboutCard(props: AboutCardProps) {
   const { variant } = props;
@@ -97,7 +96,8 @@ export function AboutCard(props: AboutCardProps) {
     entity,
     scmIntegrationsApi,
   );
-  const entityMetadataEditUrl = getEntityMetadataEditUrl(entity);
+  const entityMetadataEditUrl =
+    entity.metadata.annotations?.[ANNOTATION_EDIT_URL];
 
   const viewInSource: IconLinkVerticalProps = {
     label: 'View Source',

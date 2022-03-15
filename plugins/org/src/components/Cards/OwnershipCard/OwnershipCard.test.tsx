@@ -103,11 +103,6 @@ const items = [
       {
         type: 'ownedBy',
         targetRef: 'group:default/my-team',
-        target: {
-          name: 'my-team',
-          namespace: 'default',
-          kind: 'group',
-        },
       },
     ],
   },
@@ -140,11 +135,6 @@ describe('OwnershipCard', () => {
       {
         type: 'memberOf',
         targetRef: 'group:default/examplegroup',
-        target: {
-          kind: 'group',
-          name: 'examplegroup',
-          namespace: 'default',
-        },
       },
     ],
   };
@@ -248,7 +238,7 @@ describe('OwnershipCard', () => {
 
     expect(getByText('OPENAPI').closest('a')).toHaveAttribute(
       'href',
-      '/create/?filters%5Bkind%5D=API&filters%5Btype%5D=openapi&filters%5Bowners%5D%5B0%5D=my-team&filters%5Buser%5D=all',
+      '/create/?filters%5Bkind%5D=API&filters%5Btype%5D=openapi&filters%5Bowners%5D=my-team&filters%5Buser%5D=all',
     );
   });
 
@@ -266,11 +256,6 @@ describe('OwnershipCard', () => {
         {
           type: 'memberOf',
           targetRef: 'group:default/my-team',
-          target: {
-            kind: 'group',
-            name: 'my-team',
-            namespace: 'default',
-          },
         },
       ],
     };
@@ -295,7 +280,7 @@ describe('OwnershipCard', () => {
 
     expect(getByText('OPENAPI').closest('a')).toHaveAttribute(
       'href',
-      '/create/?filters%5Bkind%5D=API&filters%5Btype%5D=openapi&filters%5Bowners%5D%5B0%5D=user%3Athe-user&filters%5Bowners%5D%5B1%5D=my-team&filters%5Buser%5D=all',
+      '/create/?filters%5Bkind%5D=API&filters%5Btype%5D=openapi&filters%5Bowners%5D=user%3Athe-user&filters%5Bowners%5D=my-team&filters%5Buser%5D=all',
     );
   });
 });

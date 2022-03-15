@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { RELATION_OWNED_BY, RELATION_PART_OF } from '@backstage/catalog-model';
 import {
-  favoriteEntityIcon,
-  favoriteEntityTooltip,
-  formatEntityRefTitle,
-  getEntityMetadataEditUrl,
-  getEntityMetadataViewUrl,
+  ANNOTATION_EDIT_URL,
+  ANNOTATION_VIEW_URL,
+  RELATION_OWNED_BY,
+  RELATION_PART_OF,
+} from '@backstage/catalog-model';
+import {
+  humanizeEntityRef,
   getEntityRelations,
   useEntityList,
   useStarredEntities,
@@ -37,6 +38,9 @@ import {
   TableProps,
   WarningPanel,
 } from '@backstage/core-components';
+import StarBorder from '@material-ui/icons/StarBorder';
+import { withStyles } from '@material-ui/core/styles';
+import Star from '@material-ui/icons/Star';
 
 /**
  * Props for {@link CatalogTable}.
@@ -47,6 +51,12 @@ export interface CatalogTableProps {
   columns?: TableColumn<CatalogTableRow>[];
   actions?: TableProps<CatalogTableRow>['actions'];
 }
+
+const YellowStar = withStyles({
+  root: {
+    color: '#f3ba37',
+  },
+})(Star);
 
 /** @public */
 export const CatalogTable = (props: CatalogTableProps) => {
@@ -86,7 +96,7 @@ export const CatalogTable = (props: CatalogTableProps) => {
 
   const defaultActions: TableProps<CatalogTableRow>['actions'] = [
     ({ entity }) => {
-      const url = getEntityMetadataViewUrl(entity);
+      const url = entity.metadata.annotations?.[ANNOTATION_VIEW_URL];
       return {
         icon: () => <OpenInNew aria-label="View" fontSize="small" />,
         tooltip: 'View',
@@ -98,7 +108,7 @@ export const CatalogTable = (props: CatalogTableProps) => {
       };
     },
     ({ entity }) => {
-      const url = getEntityMetadataEditUrl(entity);
+      const url = entity.metadata.annotations?.[ANNOTATION_EDIT_URL];
       return {
         icon: () => <Edit aria-label="Edit" fontSize="small" />,
         tooltip: 'Edit',
@@ -113,8 +123,8 @@ export const CatalogTable = (props: CatalogTableProps) => {
       const isStarred = isStarredEntity(entity);
       return {
         cellStyle: { paddingLeft: '1em' },
-        icon: () => favoriteEntityIcon(isStarred),
-        tooltip: favoriteEntityTooltip(isStarred),
+        icon: () => (isStarred ? <YellowStar /> : <StarBorder />),
+        tooltip: isStarred ? 'Remove from favorites' : 'Add to favorites',
         onClick: () => toggleStarredEntity(entity),
       };
     },
@@ -129,16 +139,16 @@ export const CatalogTable = (props: CatalogTableProps) => {
     return {
       entity,
       resolved: {
-        name: formatEntityRefTitle(entity, {
+        name: humanizeEntityRef(entity, {
           defaultKind: 'Component',
         }),
         ownedByRelationsTitle: ownedByRelations
-          .map(r => formatEntityRefTitle(r, { defaultKind: 'group' }))
+          .map(r => humanizeEntityRef(r, { defaultKind: 'group' }))
           .join(', '),
         ownedByRelations,
         partOfSystemRelationTitle: partOfSystemRelations
           .map(r =>
-            formatEntityRefTitle(r, {
+            humanizeEntityRef(r, {
               defaultKind: 'system',
             }),
           )

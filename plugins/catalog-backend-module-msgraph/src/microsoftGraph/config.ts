@@ -53,11 +53,11 @@ export type MicrosoftGraphProviderConfig = {
    */
   userFilter?: string;
   /**
-   * The expand argument to apply to users.
+   * The "expand" argument to apply to users.
    *
    * E.g. "manager"
    */
-  userExpand?: string[];
+  userExpand?: string;
   /**
    * The filter to apply to extract users by groups memberships.
    *
@@ -71,6 +71,12 @@ export type MicrosoftGraphProviderConfig = {
    */
   userGroupMemberSearch?: string;
   /**
+   * The "expand" argument to apply to groups.
+   *
+   * E.g. "member"
+   */
+  groupExpand?: string;
+  /**
    * The filter to apply to extract groups.
    *
    * E.g. "securityEnabled eq false and mailEnabled eq true"
@@ -82,6 +88,15 @@ export type MicrosoftGraphProviderConfig = {
    * E.g. "\"displayName:-team\"" would only match groups which contain '-team'
    */
   groupSearch?: string;
+  /**
+   * By default, the Microsoft Graph API only provides the basic feature set
+   * for querying. Certain features are limited to advanced query capabilities
+   * (see https://docs.microsoft.com/en-us/graph/aad-advanced-queries)
+   * and need to be enabled.
+   *
+   * Some features like `$expand` are not available for advanced queries, though.
+   */
+  queryMode?: 'basic' | 'advanced';
 };
 
 /**
@@ -106,6 +121,8 @@ export function readMicrosoftGraphConfig(
     const tenantId = providerConfig.getString('tenantId');
     const clientId = providerConfig.getString('clientId');
     const clientSecret = providerConfig.getString('clientSecret');
+
+    const userExpand = providerConfig.getOptionalString('userExpand');
     const userFilter = providerConfig.getOptionalString('userFilter');
     const userGroupMemberFilter = providerConfig.getOptionalString(
       'userGroupMemberFilter',
@@ -113,6 +130,7 @@ export function readMicrosoftGraphConfig(
     const userGroupMemberSearch = providerConfig.getOptionalString(
       'userGroupMemberSearch',
     );
+    const groupExpand = providerConfig.getOptionalString('groupExpand');
     const groupFilter = providerConfig.getOptionalString('groupFilter');
     const groupSearch = providerConfig.getOptionalString('groupSearch');
 
@@ -127,17 +145,29 @@ export function readMicrosoftGraphConfig(
       );
     }
 
+    const queryMode = providerConfig.getOptionalString('queryMode');
+    if (
+      queryMode !== undefined &&
+      queryMode !== 'basic' &&
+      queryMode !== 'advanced'
+    ) {
+      throw new Error(`queryMode must be one of: basic, advanced`);
+    }
+
     providers.push({
       target,
       authority,
       tenantId,
       clientId,
       clientSecret,
+      userExpand,
       userFilter,
       userGroupMemberFilter,
       userGroupMemberSearch,
+      groupExpand,
       groupFilter,
       groupSearch,
+      queryMode,
     });
   }
 

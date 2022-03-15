@@ -32,14 +32,6 @@ const YellowStar = withStyles({
   },
 })(Star);
 
-/** @public */
-export const favoriteEntityTooltip = (isStarred: boolean) =>
-  isStarred ? 'Remove from favorites' : 'Add to favorites';
-
-/** @public */
-export const favoriteEntityIcon = (isStarred: boolean) =>
-  isStarred ? <YellowStar /> : <StarBorder />;
-
 /**
  * IconButton for showing if a current entity is starred and adding/removing it from the favorite entities
  * @param props - MaterialUI IconButton props extended by required `entity` prop
@@ -55,8 +47,10 @@ export const FavoriteEntity = (props: FavoriteEntityProps) => {
       {...props}
       onClick={() => toggleStarredEntity()}
     >
-      <Tooltip title={favoriteEntityTooltip(isStarredEntity)}>
-        {favoriteEntityIcon(isStarredEntity)}
+      <Tooltip
+        title={isStarredEntity ? 'Remove from favorites' : 'Add to favorites'}
+      >
+        {isStarredEntity ? <YellowStar /> : <StarBorder />}
       </Tooltip>
     </IconButton>
   );

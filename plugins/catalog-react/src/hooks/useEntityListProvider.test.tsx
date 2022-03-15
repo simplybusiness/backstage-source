@@ -29,7 +29,7 @@ import qs from 'qs';
 import React, { PropsWithChildren } from 'react';
 import { MemoryRouter } from 'react-router';
 import { catalogApiRef } from '../api';
-import { DefaultStarredEntitiesApi, starredEntitiesApiRef } from '../apis';
+import { starredEntitiesApiRef, MockStarredEntitiesApi } from '../apis';
 import { EntityKindPicker, UserListPicker } from '../components';
 import { EntityKindFilter, EntityTypeFilter, UserListFilter } from '../filters';
 import { UserListFilterKind } from '../types';
@@ -46,11 +46,6 @@ const entities: Entity[] = [
       {
         type: 'ownedBy',
         targetRef: 'user:default/guest',
-        target: {
-          name: 'guest',
-          namespace: 'default',
-          kind: 'User',
-        },
       },
     ],
   },
@@ -76,7 +71,7 @@ const mockIdentityApi: Partial<IdentityApi> = {
 };
 const mockCatalogApi: Partial<CatalogApi> = {
   getEntities: jest.fn().mockImplementation(async () => ({ items: entities })),
-  getEntityByName: async () => undefined,
+  getEntityByRef: async () => undefined,
 };
 
 const wrapper = ({
@@ -95,12 +90,7 @@ const wrapper = ({
           [catalogApiRef, mockCatalogApi],
           [identityApiRef, mockIdentityApi],
           [storageApiRef, MockStorageApi.create()],
-          [
-            starredEntitiesApiRef,
-            new DefaultStarredEntitiesApi({
-              storageApi: MockStorageApi.create(),
-            }),
-          ],
+          [starredEntitiesApiRef, new MockStarredEntitiesApi()],
         ]}
       >
         <EntityListProvider>

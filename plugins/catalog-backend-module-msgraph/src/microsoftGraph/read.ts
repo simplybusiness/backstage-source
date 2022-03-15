@@ -84,8 +84,9 @@ export async function defaultUserTransformer(
 export async function readMicrosoftGraphUsers(
   client: MicrosoftGraphClient,
   options: {
+    queryMode?: 'basic' | 'advanced';
     userFilter?: string;
-    userExpand?: string[];
+    userExpand?: string;
     transformer?: UserTransformer;
     logger: Logger;
   },
@@ -95,13 +96,16 @@ export async function readMicrosoftGraphUsers(
   const users: UserEntity[] = [];
   const limiter = limiterFactory(10);
 
-  const transformer = options?.transformer ?? defaultUserTransformer;
+  const transformer = options.transformer ?? defaultUserTransformer;
   const promises: Promise<void>[] = [];
 
-  for await (const user of client.getUsers({
-    filter: options.userFilter,
-    expand: options.userExpand,
-  })) {
+  for await (const user of client.getUsers(
+    {
+      filter: options.userFilter,
+      expand: options.userExpand,
+    },
+    options.queryMode,
+  )) {
     // Process all users in parallel, otherwise it can take quite some time
     promises.push(
       limiter(async () => {
@@ -137,8 +141,11 @@ export async function readMicrosoftGraphUsers(
 export async function readMicrosoftGraphUsersInGroups(
   client: MicrosoftGraphClient,
   options: {
+    queryMode?: 'basic' | 'advanced';
+    userExpand?: string;
     userGroupMemberSearch?: string;
     userGroupMemberFilter?: string;
+    groupExpand?: string;
     transformer?: UserTransformer;
     logger: Logger;
   },
@@ -149,16 +156,20 @@ export async function readMicrosoftGraphUsersInGroups(
 
   const limiter = limiterFactory(10);
 
-  const transformer = options?.transformer ?? defaultUserTransformer;
+  const transformer = options.transformer ?? defaultUserTransformer;
   const userGroupMemberPromises: Promise<void>[] = [];
   const userPromises: Promise<void>[] = [];
 
   const groupMemberUsers: Set<string> = new Set();
 
-  for await (const group of client.getGroups({
-    search: options?.userGroupMemberSearch,
-    filter: options?.userGroupMemberFilter,
-  })) {
+  for await (const group of client.getGroups(
+    {
+      expand: options.groupExpand,
+      search: options.userGroupMemberSearch,
+      filter: options.userGroupMemberFilter,
+    },
+    options.queryMode,
+  )) {
     // Process all groups in parallel, otherwise it can take quite some time
     userGroupMemberPromises.push(
       limiter(async () => {
@@ -186,7 +197,9 @@ export async function readMicrosoftGraphUsersInGroups(
         let user;
         let userPhoto;
         try {
-          user = await client.getUserProfile(userId);
+          user = await client.getUserProfile(userId, {
+            expand: options.userExpand,
+          });
         } catch (e) {
           options.logger.warn(`Unable to load user for ${userId}`);
         }
@@ -326,8 +339,10 @@ export async function readMicrosoftGraphGroups(
   client: MicrosoftGraphClient,
   tenantId: string,
   options?: {
-    groupSearch?: string;
+    queryMode?: 'basic' | 'advanced';
+    groupExpand?: string;
     groupFilter?: string;
+    groupSearch?: string;
     groupTransformer?: GroupTransformer;
     organizationTransformer?: OrganizationTransformer;
   },
@@ -353,10 +368,14 @@ export async function readMicrosoftGraphGroups(
   const transformer = options?.groupTransformer ?? defaultGroupTransformer;
   const promises: Promise<void>[] = [];
 
-  for await (const group of client.getGroups({
-    search: options?.groupSearch,
-    filter: options?.groupFilter,
-  })) {
+  for await (const group of client.getGroups(
+    {
+      expand: options?.groupExpand,
+      search: options?.groupSearch,
+      filter: options?.groupFilter,
+    },
+    options?.queryMode,
+  )) {
     // Process all groups in parallel, otherwise it can take quite some time
     promises.push(
       limiter(async () => {
@@ -488,6 +507,9 @@ export function resolveRelations(
     retrieveItems(groupMemberOf, id).forEach(p => {
       const parentGroup = groupMap.get(p);
       if (parentGroup) {
+        if (!user.spec.memberOf) {
+          user.spec.memberOf = [];
+        }
         user.spec.memberOf.push(stringifyEntityRef(parentGroup));
       }
     });
@@ -506,12 +528,14 @@ export async function readMicrosoftGraphOrg(
   client: MicrosoftGraphClient,
   tenantId: string,
   options: {
-    userExpand?: string[];
+    userExpand?: string;
     userFilter?: string;
     userGroupMemberSearch?: string;
     userGroupMemberFilter?: string;
+    groupExpand?: string;
     groupSearch?: string;
     groupFilter?: string;
+    queryMode?: 'basic' | 'advanced';
     userTransformer?: UserTransformer;
     groupTransformer?: GroupTransformer;
     organizationTransformer?: OrganizationTransformer;
@@ -520,10 +544,11 @@ export async function readMicrosoftGraphOrg(
 ): Promise<{ users: UserEntity[]; groups: GroupEntity[] }> {
   const users: UserEntity[] = [];
 
-  if (options.userGroupMemberFilter) {
+  if (options.userGroupMemberFilter || options.userGroupMemberSearch) {
     const { users: usersInGroups } = await readMicrosoftGraphUsersInGroups(
       client,
       {
+        queryMode: options.queryMode,
         userGroupMemberFilter: options.userGroupMemberFilter,
         userGroupMemberSearch: options.userGroupMemberSearch,
         transformer: options.userTransformer,
@@ -533,6 +558,7 @@ export async function readMicrosoftGraphOrg(
     users.push(...usersInGroups);
   } else {
     const { users: usersWithFilter } = await readMicrosoftGraphUsers(client, {
+      queryMode: options.queryMode,
       userFilter: options.userFilter,
       userExpand: options.userExpand,
       transformer: options.userTransformer,
@@ -542,10 +568,11 @@ export async function readMicrosoftGraphOrg(
   }
   const { groups, rootGroup, groupMember, groupMemberOf } =
     await readMicrosoftGraphGroups(client, tenantId, {
-      groupSearch: options?.groupSearch,
-      groupFilter: options?.groupFilter,
-      groupTransformer: options?.groupTransformer,
-      organizationTransformer: options?.organizationTransformer,
+      queryMode: options.queryMode,
+      groupSearch: options.groupSearch,
+      groupFilter: options.groupFilter,
+      groupTransformer: options.groupTransformer,
+      organizationTransformer: options.organizationTransformer,
     });
 
   resolveRelations(rootGroup, groups, users, groupMember, groupMemberOf);

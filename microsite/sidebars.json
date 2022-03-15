@@ -7,7 +7,7 @@
       "overview/vision",
       "overview/background",
       "overview/adopting",
-      "overview/stability-index",
+      "overview/versioning-policy",
       "overview/support",
       "overview/glossary",
       "overview/logos"
@@ -273,6 +273,7 @@
     "Tutorials": [
       "tutorials/journey",
       "tutorials/quickstart-app-plugin",
+      "tutorials/package-role-migration",
       "tutorials/migrating-away-from-core",
       "tutorials/configuring-plugin-databases",
       "tutorials/switching-sqlite-postgres",

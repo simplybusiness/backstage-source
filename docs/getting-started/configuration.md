@@ -78,7 +78,7 @@ from the previous steps.
 ```diff
 backend:
   database:
--    client: sqlite3
+-    client: better-sqlite3
 -    connection: ':memory:'
 +    # config options: https://node-postgres.com/api/client
 +    client: pg
@@ -133,9 +133,9 @@ familiar with. For other options, see
 Go to
 [https://github.com/settings/applications/new](https://github.com/settings/applications/new)
 to create your OAuth App. The `Homepage URL` should point to Backstage's
-frontend, in our tutorial it would be `http://127.0.0.1:3000`. The
+frontend, in our tutorial it would be `http://localhost:3000`. The
 `Authorization callback URL` will point to the auth backend, which will most
-likely be `http://127.0.0.1:7007/api/auth/github/handler/frame`.
+likely be `http://localhost:7007/api/auth/github/handler/frame`.
 
 <p align='center'>
   <img src='../assets/getting-started/gh-oauth.png' alt='Screenshot of the GitHub OAuth creation page' />
@@ -218,7 +218,7 @@ for 7 days, it's a lucky number.
   <img src='../assets/getting-started/gh-pat.png' alt='Screenshot of the GitHub Personal Access Token creation page' />
 </p>
 
-Set the scope to your likings. For this tutorial, selecting "repo" should be
+Set the scope to your likings. For this tutorial, selecting "repo" and "workflow" is required as the scaffolding job in this guide configures a GitHub actions workflow for the newly created project.
 enough.
 
 In the `app-config.yaml`, search for `integrations:` and add your token, like we
@@ -276,7 +276,7 @@ otherwise something went terribly wrong.
 
 - Go to `create` and choose to create a website with the `React SSR Template`
 - Type in a name, let's use `tutorial`
-- Select the group `group-a` which will own this new website, and go to the next
+- Select the group `team-a` which will own this new website, and go to the next
   step
 
 <p align='center'>

@@ -55,7 +55,7 @@ const mockConfigApi = {
 } as Partial<ConfigApi>;
 
 const mockCatalogApi = {
-  getEntityByName: () => Promise.resolve(mockUser),
+  getEntityByRef: () => Promise.resolve(mockUser),
 } as Partial<CatalogApi>;
 
 const mockIdentityApi = {
@@ -104,7 +104,6 @@ const backendEntities: Entity[] = [
       {
         type: RELATION_OWNED_BY,
         targetRef: 'user:default/testuser',
-        target: { kind: 'User', namespace: 'default', name: 'testUser' },
       },
     ],
   },
@@ -138,7 +137,6 @@ const backendEntities: Entity[] = [
       {
         type: RELATION_OWNED_BY,
         targetRef: 'user:default/testuser',
-        target: { kind: 'User', namespace: 'default', name: 'testUser' },
       },
     ],
   },

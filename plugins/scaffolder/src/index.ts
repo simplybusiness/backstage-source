@@ -22,12 +22,12 @@
 
 export { scaffolderApiRef, ScaffolderClient } from './api';
 export type {
-  JobStatus,
   ListActionsResponse,
   LogEvent,
   ScaffolderApi,
   ScaffolderGetIntegrationsListOptions,
   ScaffolderGetIntegrationsListResponse,
+  ScaffolderOutputLink,
   ScaffolderScaffoldOptions,
   ScaffolderScaffoldResponse,
   ScaffolderStreamLogsOptions,
@@ -44,6 +44,7 @@ export type {
   CustomFieldValidator,
   FieldExtensionOptions,
   FieldExtensionComponentProps,
+  FieldExtensionComponent,
 } from './extensions';
 export {
   EntityPickerFieldExtension,
@@ -55,12 +56,5 @@ export {
   ScaffolderPage,
   scaffolderPlugin,
 } from './plugin';
-export * from './components/fields';
-export type { RepoUrlPickerUiOptions } from './components/fields';
-export { FavouriteTemplate } from './components/FavouriteTemplate';
-export { TemplateList } from './components/TemplateList';
-export type { TemplateListProps } from './components/TemplateList';
-export { TemplateTypePicker } from './components/TemplateTypePicker';
-export * from './components/secrets';
-export { TaskPage } from './components/TaskPage';
+export * from './components';
 export type { TaskPageProps } from './components/TaskPage';

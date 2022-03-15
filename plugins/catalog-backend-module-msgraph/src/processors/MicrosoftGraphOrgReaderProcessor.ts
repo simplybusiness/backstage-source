@@ -19,7 +19,7 @@ import {
   CatalogProcessor,
   CatalogProcessorEmit,
   LocationSpec,
-  results,
+  processingResult,
 } from '@backstage/plugin-catalog-backend';
 import { Logger } from 'winston';
 import {
@@ -73,6 +73,7 @@ export class MicrosoftGraphOrgReaderProcessor implements CatalogProcessor {
     this.groupTransformer = options.groupTransformer;
     this.organizationTransformer = options.organizationTransformer;
   }
+
   getProcessorName(): string {
     return 'MicrosoftGraphOrgReaderProcessor';
   }
@@ -95,7 +96,7 @@ export class MicrosoftGraphOrgReaderProcessor implements CatalogProcessor {
       );
     }
 
-    // Read out all of the raw data
+    // Read out all the raw data
     const startTimestamp = Date.now();
     this.logger.info('Reading Microsoft Graph users and groups');
 
@@ -109,8 +110,10 @@ export class MicrosoftGraphOrgReaderProcessor implements CatalogProcessor {
         userFilter: provider.userFilter,
         userGroupMemberFilter: provider.userGroupMemberFilter,
         userGroupMemberSearch: provider.userGroupMemberSearch,
+        groupExpand: provider.groupExpand,
         groupFilter: provider.groupFilter,
         groupSearch: provider.groupSearch,
+        queryMode: provider.queryMode,
         userTransformer: this.userTransformer,
         groupTransformer: this.groupTransformer,
         organizationTransformer: this.organizationTransformer,
@@ -125,10 +128,10 @@ export class MicrosoftGraphOrgReaderProcessor implements CatalogProcessor {
 
     // Done!
     for (const group of groups) {
-      emit(results.entity(location, group));
+      emit(processingResult.entity(location, group));
     }
     for (const user of users) {
-      emit(results.entity(location, user));
+      emit(processingResult.entity(location, user));
     }
 
     return true;

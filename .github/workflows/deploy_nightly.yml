@@ -56,6 +56,10 @@ jobs:
         run: yarn tsc
 
       - name: build
+        run: yarn backstage-cli repo build
+
+      - name: build embedded techdocs app
+        working-directory: packages/techdocs-cli-embedded-app
         run: yarn build
 
       # Prepares a nightly release version of any package with pending changesets

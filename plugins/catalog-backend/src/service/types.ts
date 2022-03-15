@@ -25,8 +25,6 @@ import { Location } from '@backstage/catalog-client';
 export interface LocationInput {
   type: string;
   target: string;
-  /** @deprecated This field is ignored and will be removed */
-  presence?: 'optional' | 'required';
 }
 
 /**
@@ -77,7 +75,8 @@ export interface RefreshService {
 
 /**
  * Interacts with the database to manage locations.
- * @public */
+ * @public
+ */
 export interface LocationStore {
   createLocation(location: LocationInput): Promise<Location>;
   listLocations(): Promise<Location[]>;

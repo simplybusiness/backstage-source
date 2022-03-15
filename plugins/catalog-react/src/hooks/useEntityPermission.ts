@@ -17,7 +17,7 @@
 import { stringifyEntityRef } from '@backstage/catalog-model';
 import { Permission } from '@backstage/plugin-permission-common';
 import { usePermission } from '@backstage/plugin-permission-react';
-import { useEntity } from './useEntity';
+import { useAsyncEntity } from './useEntity';
 
 /**
  * A thin wrapper around the
@@ -28,14 +28,18 @@ import { useEntity } from './useEntity';
  * Note: this hook blocks the permission request until the entity has loaded in
  * context. If you have the entityRef and need concurrent requests, use the
  * `usePermission` hook directly.
- * @public
+ * @alpha
  */
 export function useEntityPermission(permission: Permission): {
   loading: boolean;
   allowed: boolean;
   error?: Error;
 } {
-  const { entity, loading: loadingEntity, error: entityError } = useEntity();
+  const {
+    entity,
+    loading: loadingEntity,
+    error: entityError,
+  } = useAsyncEntity();
   const {
     allowed,
     loading: loadingPermission,

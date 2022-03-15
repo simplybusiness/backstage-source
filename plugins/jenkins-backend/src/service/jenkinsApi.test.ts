@@ -18,6 +18,8 @@ import { JenkinsApiImpl } from './jenkinsApi';
 import jenkins from 'jenkins';
 import { JenkinsInfo } from './jenkinsInfoProvider';
 import { JenkinsBuild, JenkinsProject } from '../types';
+import { AuthorizeResult } from '@backstage/plugin-permission-common';
+import { NotAllowedError } from '@backstage/errors';
 
 jest.mock('jenkins');
 const mockedJenkinsClient = {
@@ -40,8 +42,16 @@ const jenkinsInfo: JenkinsInfo = {
   jobFullName: 'example-jobName',
 };
 
+const fakePermissionApi = {
+  authorize: jest.fn().mockResolvedValue([
+    {
+      result: AuthorizeResult.ALLOW,
+    },
+  ]),
+};
+
 describe('JenkinsApi', () => {
-  const jenkinsApi = new JenkinsApiImpl();
+  const jenkinsApi = new JenkinsApiImpl(fakePermissionApi);
 
   describe('getProjects', () => {
     const project: JenkinsProject = {
@@ -322,7 +332,7 @@ describe('JenkinsApi', () => {
         const result = await jenkinsApi.getProjects(jenkinsInfo);
 
         expect(result).toHaveLength(1);
-        // TODO: I am really just asserting the previous behaviour wth no understanding here.
+        // TODO: I am really just asserting the previous behaviour with no understanding here.
         // In my 2 Jenkins instances, 1 returns a lot of different and confusing BuildData sections and 1 returns none ☹️
         expect(result[0].lastBuild!.source).toEqual({
           branchName: 'master',
@@ -405,6 +415,34 @@ describe('JenkinsApi', () => {
   it('buildProject', async () => {
     await jenkinsApi.buildProject(jenkinsInfo, jobFullName);
 
+    expect(mockedJenkins).toHaveBeenCalledWith({
+      baseUrl: jenkinsInfo.baseUrl,
+      headers: jenkinsInfo.headers,
+      promisify: true,
+    });
+    expect(mockedJenkinsClient.job.build).toBeCalledWith(jobFullName);
+  });
+
+  it('buildProject should fail if it does not have required permissions', async () => {
+    fakePermissionApi.authorize.mockResolvedValueOnce([
+      {
+        result: AuthorizeResult.DENY,
+      },
+    ]);
+
+    await expect(() =>
+      jenkinsApi.buildProject(jenkinsInfo, jobFullName),
+    ).rejects.toThrow(NotAllowedError);
+  });
+
+  it('buildProject should succeed if it have required permissions', async () => {
+    fakePermissionApi.authorize.mockResolvedValueOnce([
+      {
+        result: AuthorizeResult.ALLOW,
+      },
+    ]);
+
+    await jenkinsApi.buildProject(jenkinsInfo, jobFullName);
     expect(mockedJenkins).toHaveBeenCalledWith({
       baseUrl: jenkinsInfo.baseUrl,
       headers: jenkinsInfo.headers,

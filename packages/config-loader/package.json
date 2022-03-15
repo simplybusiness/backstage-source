@@ -1,7 +1,7 @@
 {
   "name": "@backstage/config-loader",
   "description": "Config loading functionality used by Backstage backend, and CLI",
-  "version": "0.9.6",
+  "version": "0.9.7",
   "private": false,
   "publishConfig": {
     "access": "public",
@@ -41,12 +41,12 @@
     "@types/json-schema": "^7.0.6",
     "ajv": "^7.0.3",
     "chokidar": "^3.5.2",
-    "fs-extra": "9.1.0",
+    "fs-extra": "10.0.1",
     "json-schema": "^0.4.0",
     "json-schema-merge-allof": "^0.8.1",
     "json-schema-traverse": "^1.0.0",
     "node-fetch": "^2.6.7",
-    "typescript-json-schema": "^0.52.0",
+    "typescript-json-schema": "^0.53.0",
     "yaml": "^1.9.2",
     "yup": "^0.32.9"
   },
