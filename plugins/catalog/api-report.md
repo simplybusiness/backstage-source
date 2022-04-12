@@ -138,6 +138,8 @@ export interface CatalogTableProps {
   actions?: TableProps<CatalogTableRow>['actions'];
   // (undocumented)
   columns?: TableColumn<CatalogTableRow>[];
+  // (undocumented)
+  tableOptions?: TableProps<CatalogTableRow>['options'];
 }
 
 // @public (undocumented)
@@ -161,7 +163,11 @@ export interface DefaultCatalogPageProps {
   // (undocumented)
   columns?: TableColumn<CatalogTableRow>[];
   // (undocumented)
+  initialKind?: string;
+  // (undocumented)
   initiallySelectedFilter?: UserListFilterKind;
+  // (undocumented)
+  tableOptions?: TableProps<CatalogTableRow>['options'];
 }
 
 // @public
@@ -283,10 +289,10 @@ export interface EntityLinksCardProps {
 // @public (undocumented)
 export type EntityLinksEmptyStateClassKey = 'code';
 
-// @public (undocumented)
-export function EntityListContainer(props: {
-  children: React_2.ReactNode;
-}): JSX.Element;
+// @public @deprecated (undocumented)
+export const EntityListContainer: (props: {
+  children: ReactNode;
+}) => JSX.Element;
 
 // @public
 export function EntityOrphanWarning(): JSX.Element;
@@ -319,15 +325,13 @@ export interface EntitySwitchProps {
   children: ReactNode;
 }
 
-// @public (undocumented)
-export function FilterContainer(props: {
-  children: React_2.ReactNode;
-}): JSX.Element;
+// @public @deprecated (undocumented)
+export const FilterContainer: (props: { children: ReactNode }) => JSX.Element;
 
-// @public (undocumented)
-export function FilteredEntityLayout(props: {
-  children: React_2.ReactNode;
-}): JSX.Element;
+// @public @deprecated (undocumented)
+export const FilteredEntityLayout: (props: {
+  children: React.ReactNode;
+}) => JSX.Element;
 
 // @public
 export function hasCatalogProcessingErrors(

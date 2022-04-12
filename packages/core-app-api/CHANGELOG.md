@@ -1,5 +1,38 @@
 # @backstage/core-app-api
 
+## 1.0.1-next.1
+
+### Patch Changes
+
+- 24254fd433: build(deps): bump `@testing-library/user-event` from 13.5.0 to 14.0.0
+- 3ff2bfb66e: Refactored the route collection logic to prepare for future changes and avoid duplicate element tree traversal for the analytics context.
+- 230ad0826f: Bump to using `@types/node` v16
+- Updated dependencies
+  - @backstage/core-plugin-api@1.0.1-next.0
+
+## 1.0.1-next.0
+
+### Patch Changes
+
+- a7bb762dab: fixed empty body issue for POST requests using FetchAPI with 'plugin://' prefix
+- c47509e1a0: Implemented changes suggested by Deepsource.io including multiple double non-null assertion operators and unexpected awaits for non-promise values.
+
+## 1.0.0
+
+### Major Changes
+
+- b58c70c223: This package has been promoted to v1.0! To understand how this change affects the package, please check out our [versioning policy](https://backstage.io/docs/overview/versioning-policy).
+
+### Patch Changes
+
+- a422d7ce5e: chore(deps): bump `@testing-library/react` from 11.2.6 to 12.1.3
+- f24ef7864e: Minor typo fixes
+- Updated dependencies
+  - @backstage/core-plugin-api@1.0.0
+  - @backstage/version-bridge@1.0.0
+  - @backstage/config@1.0.0
+  - @backstage/types@1.0.0
+
 ## 0.6.0
 
 ### Minor Changes

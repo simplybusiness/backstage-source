@@ -1,5 +1,103 @@
 # @backstage/plugin-catalog-react
 
+## 1.0.1-next.3
+
+### Patch Changes
+
+- 24254fd433: build(deps): bump `@testing-library/user-event` from 13.5.0 to 14.0.0
+- 863e7bcb7b: Updated the "unregister location" behavior in `UnregisterEntityDialog`. Removed unnecessary entity deletion requests that were sent after successfully deleting a location.
+- Updated dependencies
+  - @backstage/core-components@0.9.3-next.2
+  - @backstage/core-plugin-api@1.0.1-next.0
+  - @backstage/plugin-permission-common@0.6.0-next.1
+  - @backstage/plugin-permission-react@0.4.0-next.1
+  - @backstage/integration@1.1.0-next.2
+
+## 1.0.1-next.2
+
+### Patch Changes
+
+- 4be0d1e777: Changed catalog filter components to only pay attention to query parameters relevant to the component.
+- 5d5fdbe541: Columns in CatalogTable now change depending on the entity kind, ensuring only relevant columns are displayed.
+- 99063c39ae: Minor API report cleanup
+- Updated dependencies
+  - @backstage/core-components@0.9.3-next.1
+  - @backstage/catalog-model@1.0.1-next.1
+
+## 1.0.1-next.1
+
+### Patch Changes
+
+- 0ffd88a90e: Prevent permissions with types other than `ResourcePermission<'catalog-entity'>` from being used with the `useEntityPermission` hook.
+- 4af82967f4: Decouple tags picker from backend entities
+
+  `EntityTagPicker` fetches all the tags independently and it doesn't require all the entities to be available client side.
+
+- 37b04b5a5e: Removed broken link from Labels section of entity inspector.
+- 4431873583: Update `usePermission` usage.
+- Updated dependencies
+  - @backstage/integration@1.1.0-next.1
+  - @backstage/plugin-permission-react@0.4.0-next.0
+  - @backstage/plugin-permission-common@0.6.0-next.0
+  - @backstage/plugin-catalog-common@1.0.1-next.1
+
+## 1.0.1-next.0
+
+### Patch Changes
+
+- a496cee4d1: Add support for string refs to the `EntityRefLinks` component
+- d34900af81: Added a new `NextScaffolderRouter` which will eventually replace the exiting router
+- Updated dependencies
+  - @backstage/catalog-model@1.0.1-next.0
+  - @backstage/integration@1.0.1-next.0
+  - @backstage/core-components@0.9.3-next.0
+  - @backstage/catalog-client@1.0.1-next.0
+
+## 1.0.0
+
+### Major Changes
+
+- b58c70c223: This package has been promoted to v1.0! To understand how this change affects the package, please check out our [versioning policy](https://backstage.io/docs/overview/versioning-policy).
+
+### Minor Changes
+
+- f7fb7295e6: **BREAKING**: Removed the deprecated `favoriteEntityTooltip` and `favoriteEntityIcon` functions.
+- 4cd92028b8: **BREAKING**: The following deprecated annotation reading helper functions were removed:
+
+  - `getEntityMetadataViewUrl`, use `entity.metadata.annotations?.[ANNOTATION_VIEW_URL]` instead.
+  - `getEntityMetadataEditUrl`, use `entity.metadata.annotations?.[ANNOTATION_EDIT_URL]` instead.
+
+- 1f2757bb07: **BREAKING**: The `useEntity` hook no longer returns loading or error states, and will throw an error if the entity is not immediately available. In practice this means that `useEntity` can only be used in contexts where the entity is guaranteed to have been loaded, for example inside an `EntityLayout`. To access the loading state of the entity, use `useAsyncEntity` instead.
+- 0f3520d499: **BREAKING**: Removed the deprecated `formatEntityRefTitle`, use `humanizeEntityRef` instead.
+
+### Patch Changes
+
+- a422d7ce5e: chore(deps): bump `@testing-library/react` from 11.2.6 to 12.1.3
+- c689d7a94c: Added `CatalogFilterLayout`, which replaces `FilteredEntityLayout` from `@backstage/plugin-catalog`, as well as `FilterContainer` and `EntityListContainer`. It is used like this:
+
+  ```tsx
+  <CatalogFilterLayout>
+    <CatalogFilterLayout.Filters>
+      {/* filter drawer, for example <EntityTypePicker /> and friends */}
+    </CatalogFilterLayout.Filters>
+    <CatalogFilterLayout.Content>
+      {/* content view, for example a <CatalogTable /> */}
+    </CatalogFilterLayout.Content>
+  </CatalogFilterLayout>
+  ```
+
+- Updated dependencies
+  - @backstage/core-components@0.9.2
+  - @backstage/core-plugin-api@1.0.0
+  - @backstage/version-bridge@1.0.0
+  - @backstage/plugin-permission-react@0.3.4
+  - @backstage/catalog-model@1.0.0
+  - @backstage/integration@1.0.0
+  - @backstage/catalog-client@1.0.0
+  - @backstage/errors@1.0.0
+  - @backstage/types@1.0.0
+  - @backstage/plugin-permission-common@0.5.3
+
 ## 0.9.0
 
 ### Minor Changes

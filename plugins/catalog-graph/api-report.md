@@ -18,10 +18,7 @@ import { RouteRef } from '@backstage/core-plugin-api';
 export const ALL_RELATION_PAIRS: RelationPairs;
 
 // @public
-export const CatalogGraphPage: ({
-  relationPairs,
-  initialState,
-}: {
+export const CatalogGraphPage: (props: {
   relationPairs?: RelationPairs | undefined;
   initialState?:
     | {
@@ -66,19 +63,7 @@ export enum Direction {
 }
 
 // @public
-export const EntityCatalogGraphCard: ({
-  variant,
-  relationPairs,
-  maxDepth,
-  unidirectional,
-  mergeRelations,
-  kinds,
-  relations,
-  direction,
-  height,
-  title,
-  zoom,
-}: {
+export const EntityCatalogGraphCard: (props: {
   variant?: InfoCardVariants | undefined;
   relationPairs?: RelationPairs | undefined;
   maxDepth?: number | undefined;
@@ -116,19 +101,7 @@ export type EntityNodeData = {
 };
 
 // @public
-export const EntityRelationsGraph: ({
-  rootEntityNames,
-  maxDepth,
-  unidirectional,
-  mergeRelations,
-  kinds,
-  relations,
-  direction,
-  onNodeClick,
-  relationPairs,
-  className,
-  zoom,
-}: {
+export const EntityRelationsGraph: (props: {
   rootEntityNames: CompoundEntityRef | CompoundEntityRef[];
   maxDepth?: number | undefined;
   unidirectional?: boolean | undefined;
@@ -142,6 +115,10 @@ export const EntityRelationsGraph: ({
   relationPairs?: RelationPairs | undefined;
   className?: string | undefined;
   zoom?: 'disabled' | 'enabled' | 'enable-on-click' | undefined;
+  renderNode?: DependencyGraphTypes.RenderNodeFunction<EntityNode> | undefined;
+  renderLabel?:
+    | DependencyGraphTypes.RenderLabelFunction<EntityEdge>
+    | undefined;
 }) => JSX.Element;
 
 // @public

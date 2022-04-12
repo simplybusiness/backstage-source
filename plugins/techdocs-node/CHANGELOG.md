@@ -1,5 +1,65 @@
 # @backstage/plugin-techdocs-node
 
+## 1.1.0-next.2
+
+### Minor Changes
+
+- bcf1a2496c: BREAKING: The default Techdocs behavior will no longer attempt to copy `docs/README.md` or `README.md` to `docs/index.md` (if not found). To retain this behavior in your instance, you can set the following config in your `app-config.yaml`:
+
+  ```yaml
+  techdocs:
+    generator:
+      mkdocs:
+        legacyCopyReadmeMdToIndexMd: true
+  ```
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-common@0.13.2-next.2
+  - @backstage/integration@1.1.0-next.2
+
+## 1.0.1-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.1.0-next.1
+  - @backstage/backend-common@0.13.2-next.1
+  - @backstage/plugin-search-common@0.3.3-next.1
+
+## 1.0.1-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/catalog-model@1.0.1-next.0
+  - @backstage/plugin-search-common@0.3.3-next.0
+  - @backstage/backend-common@0.13.2-next.0
+  - @backstage/integration@1.0.1-next.0
+
+## 1.0.0
+
+### Major Changes
+
+- b58c70c223: This package has been promoted to v1.0! To understand how this change affects the package, please check out our [versioning policy](https://backstage.io/docs/overview/versioning-policy).
+
+### Minor Changes
+
+- 700d93ff41: - `DirectoryPreparer` now uses private constructor. Use static fromConfig method to instantiate.
+  - `UrlPreparer` now uses private constructor. Use static fromConfig method to instantiate.
+
+### Patch Changes
+
+- f24ef7864e: Minor typo fixes
+- Updated dependencies
+  - @backstage/backend-common@0.13.1
+  - @backstage/catalog-model@1.0.0
+  - @backstage/integration@1.0.0
+  - @backstage/config@1.0.0
+  - @backstage/errors@1.0.0
+  - @backstage/plugin-search-common@0.3.2
+
 ## 0.11.12
 
 ### Patch Changes

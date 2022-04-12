@@ -1,4 +1,7 @@
 {
+  "releases": {
+    "Release Notes": ["releases/v1.0.0"]
+  },
   "docs": {
     "Overview": [
       "overview/what-is-backstage",
@@ -149,6 +152,11 @@
         "type": "subcategory",
         "label": "Datadog",
         "ids": ["integrations/datadog-rum/installation"]
+      },
+      {
+        "type": "subcategory",
+        "label": "Gerrit",
+        "ids": ["integrations/gerrit/locations"]
       },
       {
         "type": "subcategory",

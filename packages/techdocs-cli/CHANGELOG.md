@@ -1,5 +1,49 @@
 # @techdocs/cli
 
+## 1.1.0-next.1
+
+### Minor Changes
+
+- bcf1a2496c: BREAKING: The default Techdocs behavior will no longer attempt to copy `docs/README.md` or `README.md` to `docs/index.md` (if not found). To retain this behavior in your instance, you can set the following config in your `app-config.yaml`:
+
+  ```yaml
+  techdocs:
+    generator:
+      mkdocs:
+        legacyCopyReadmeMdToIndexMd: true
+  ```
+
+### Patch Changes
+
+- 230ad0826f: Bump to using `@types/node` v16
+- eb470ea54c: Adds a new flag to override the entrypoint when using a custom docker image. It could be used to reuse existing images with different entrypoints.
+- Updated dependencies
+  - @backstage/backend-common@0.13.2-next.2
+  - @backstage/plugin-techdocs-node@1.1.0-next.2
+
+## 1.0.1-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/catalog-model@1.0.1-next.0
+  - @backstage/backend-common@0.13.2-next.0
+  - @backstage/plugin-techdocs-node@1.0.1-next.0
+
+## 1.0.0
+
+### Major Changes
+
+- b58c70c223: This package has been promoted to v1.0! To understand how this change affects the package, please check out our [versioning policy](https://backstage.io/docs/overview/versioning-policy).
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-common@0.13.1
+  - @backstage/catalog-model@1.0.0
+  - @backstage/config@1.0.0
+  - @backstage/plugin-techdocs-node@1.0.0
+
 ## 0.8.17
 
 ### Patch Changes

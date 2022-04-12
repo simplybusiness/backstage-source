@@ -14,15 +14,11 @@
  * limitations under the License.
  */
 
-import { Entity } from '@backstage/catalog-model';
 import { NotAllowedError } from '@backstage/errors';
 import { AuthorizeResult } from '@backstage/plugin-permission-common';
-import {
-  createConditionTransformer,
-  PermissionRule,
-} from '@backstage/plugin-permission-node';
-import { EntitiesSearchFilter } from '../catalog/types';
+import { createConditionTransformer } from '@backstage/plugin-permission-node';
 import { isEntityKind } from '../permissions/rules/isEntityKind';
+import { CatalogPermissionRule } from '../permissions/rules';
 import { AuthorizedEntitiesCatalog } from './AuthorizedEntitiesCatalog';
 
 describe('AuthorizedEntitiesCatalog', () => {
@@ -34,11 +30,10 @@ describe('AuthorizedEntitiesCatalog', () => {
   };
   const fakePermissionApi = {
     authorize: jest.fn(),
+    authorizeConditional: jest.fn(),
   };
 
-  const createCatalog = (
-    ...rules: PermissionRule<Entity, EntitiesSearchFilter, unknown[]>[]
-  ) =>
+  const createCatalog = (...rules: CatalogPermissionRule[]) =>
     new AuthorizedEntitiesCatalog(
       fakeCatalog,
       fakePermissionApi,
@@ -51,7 +46,7 @@ describe('AuthorizedEntitiesCatalog', () => {
 
   describe('entities', () => {
     it('returns empty response on DENY', async () => {
-      fakePermissionApi.authorize.mockResolvedValue([
+      fakePermissionApi.authorizeConditional.mockResolvedValue([
         { result: AuthorizeResult.DENY },
       ]);
       const catalog = createCatalog();
@@ -67,7 +62,7 @@ describe('AuthorizedEntitiesCatalog', () => {
     });
 
     it('calls underlying catalog method with correct filter on CONDITIONAL', async () => {
-      fakePermissionApi.authorize.mockResolvedValue([
+      fakePermissionApi.authorizeConditional.mockResolvedValue([
         {
           result: AuthorizeResult.CONDITIONAL,
           conditions: { rule: 'IS_ENTITY_KIND', params: [['b']] },
@@ -84,7 +79,7 @@ describe('AuthorizedEntitiesCatalog', () => {
     });
 
     it('calls underlying catalog method on ALLOW', async () => {
-      fakePermissionApi.authorize.mockResolvedValue([
+      fakePermissionApi.authorizeConditional.mockResolvedValue([
         { result: AuthorizeResult.ALLOW },
       ]);
       const catalog = createCatalog();
@@ -104,7 +99,7 @@ describe('AuthorizedEntitiesCatalog', () => {
           { kind: 'component', namespace: 'default', name: 'my-component' },
         ],
       });
-      fakePermissionApi.authorize.mockResolvedValue([
+      fakePermissionApi.authorizeConditional.mockResolvedValue([
         { result: AuthorizeResult.DENY },
       ]);
       const catalog = new AuthorizedEntitiesCatalog(
@@ -119,7 +114,7 @@ describe('AuthorizedEntitiesCatalog', () => {
     });
 
     it('throws error on CONDITIONAL authorization that evaluates to 0 entities', async () => {
-      fakePermissionApi.authorize.mockResolvedValue([
+      fakePermissionApi.authorizeConditional.mockResolvedValue([
         {
           result: AuthorizeResult.CONDITIONAL,
           conditions: { rule: 'IS_ENTITY_KIND', params: [['b']] },
@@ -138,7 +133,7 @@ describe('AuthorizedEntitiesCatalog', () => {
     });
 
     it('calls underlying catalog method on CONDITIONAL authorization that evaluates to nonzero entities', async () => {
-      fakePermissionApi.authorize.mockResolvedValue([
+      fakePermissionApi.authorizeConditional.mockResolvedValue([
         {
           result: AuthorizeResult.CONDITIONAL,
           conditions: { rule: 'IS_ENTITY_KIND', params: [['b']] },
@@ -164,7 +159,7 @@ describe('AuthorizedEntitiesCatalog', () => {
           { kind: 'component', namespace: 'default', name: 'my-component' },
         ],
       });
-      fakePermissionApi.authorize.mockResolvedValue([
+      fakePermissionApi.authorizeConditional.mockResolvedValue([
         { result: AuthorizeResult.ALLOW },
       ]);
       const catalog = new AuthorizedEntitiesCatalog(
@@ -258,7 +253,7 @@ describe('AuthorizedEntitiesCatalog', () => {
 
   describe('facets', () => {
     it('returns empty response on DENY', async () => {
-      fakePermissionApi.authorize.mockResolvedValue([
+      fakePermissionApi.authorizeConditional.mockResolvedValue([
         { result: AuthorizeResult.DENY },
       ]);
       const catalog = createCatalog();
@@ -274,7 +269,7 @@ describe('AuthorizedEntitiesCatalog', () => {
     });
 
     it('calls underlying catalog method with correct filter on CONDITIONAL', async () => {
-      fakePermissionApi.authorize.mockResolvedValue([
+      fakePermissionApi.authorizeConditional.mockResolvedValue([
         {
           result: AuthorizeResult.CONDITIONAL,
           conditions: { rule: 'IS_ENTITY_KIND', params: [['b']] },
@@ -292,7 +287,7 @@ describe('AuthorizedEntitiesCatalog', () => {
     });
 
     it('calls underlying catalog method on ALLOW', async () => {
-      fakePermissionApi.authorize.mockResolvedValue([
+      fakePermissionApi.authorizeConditional.mockResolvedValue([
         { result: AuthorizeResult.ALLOW },
       ]);
       const catalog = createCatalog();

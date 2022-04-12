@@ -58,6 +58,7 @@ describe('createPublishGithubPullRequestAction', () => {
           status: 201,
           data: {
             html_url: 'https://github.com/myorg/myrepo/pull/123',
+            number: 123,
           },
         };
       }),
@@ -84,6 +85,7 @@ describe('createPublishGithubPullRequestAction', () => {
         title: 'Create my new app',
         branchName: 'new-app',
         description: 'This PR is really good',
+        draft: true,
       };
 
       mockFs({
@@ -108,6 +110,7 @@ describe('createPublishGithubPullRequestAction', () => {
         title: 'Create my new app',
         head: 'new-app',
         body: 'This PR is really good',
+        draft: true,
         changes: [
           {
             commit: 'Create my new app',
@@ -123,13 +126,14 @@ describe('createPublishGithubPullRequestAction', () => {
       });
     });
 
-    it('creates outputs for the url', async () => {
+    it('creates outputs for the pull request url and number', async () => {
       await instance.handler(ctx);
 
       expect(ctx.output).toHaveBeenCalledWith(
         'remoteUrl',
         'https://github.com/myorg/myrepo/pull/123',
       );
+      expect(ctx.output).toHaveBeenCalledWith('pullRequestNumber', 123);
     });
     afterEach(() => {
       mockFs.restore();
@@ -254,13 +258,14 @@ describe('createPublishGithubPullRequestAction', () => {
       });
     });
 
-    it('creates outputs for the url', async () => {
+    it('creates outputs for the pull request url and number', async () => {
       await instance.handler(ctx);
 
       expect(ctx.output).toHaveBeenCalledWith(
         'remoteUrl',
         'https://github.com/myorg/myrepo/pull/123',
       );
+      expect(ctx.output).toHaveBeenCalledWith('pullRequestNumber', 123);
     });
     afterEach(() => {
       mockFs.restore();
@@ -322,13 +327,14 @@ describe('createPublishGithubPullRequestAction', () => {
       });
     });
 
-    it('creates outputs for the url', async () => {
+    it('creates outputs for the pull request url and number', async () => {
       await instance.handler(ctx);
 
       expect(ctx.output).toHaveBeenCalledWith(
         'remoteUrl',
         'https://github.com/myorg/myrepo/pull/123',
       );
+      expect(ctx.output).toHaveBeenCalledWith('pullRequestNumber', 123);
     });
     afterEach(() => {
       mockFs.restore();
@@ -390,13 +396,14 @@ describe('createPublishGithubPullRequestAction', () => {
       });
     });
 
-    it('creates outputs for the url', async () => {
+    it('creates outputs for the pull request url and number', async () => {
       await instance.handler(ctx);
 
       expect(ctx.output).toHaveBeenCalledWith(
         'remoteUrl',
         'https://github.com/myorg/myrepo/pull/123',
       );
+      expect(ctx.output).toHaveBeenCalledWith('pullRequestNumber', 123);
     });
     afterEach(() => {
       mockFs.restore();

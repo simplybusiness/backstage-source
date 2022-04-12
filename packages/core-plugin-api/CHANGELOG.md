@@ -1,5 +1,27 @@
 # @backstage/core-plugin-api
 
+## 1.0.1-next.0
+
+### Patch Changes
+
+- 24254fd433: build(deps): bump `@testing-library/user-event` from 13.5.0 to 14.0.0
+- 230ad0826f: Bump to using `@types/node` v16
+
+## 1.0.0
+
+### Major Changes
+
+- b58c70c223: This package has been promoted to v1.0! To understand how this change affects the package, please check out our [versioning policy](https://backstage.io/docs/overview/versioning-policy).
+
+### Patch Changes
+
+- a422d7ce5e: chore(deps): bump `@testing-library/react` from 11.2.6 to 12.1.3
+- f24ef7864e: Minor typo fixes
+- Updated dependencies
+  - @backstage/version-bridge@1.0.0
+  - @backstage/config@1.0.0
+  - @backstage/types@1.0.0
+
 ## 0.8.0
 
 ### Minor Changes

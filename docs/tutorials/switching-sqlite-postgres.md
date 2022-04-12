@@ -12,17 +12,16 @@ Once you're ready to deploy Backstage in production, or to have a more
 persistent development setup, you can switch the Backstage database to
 PostgreSQL.
 
-Backstage uses the [Knex](http://knexjs.org/) library, making it fairly easy to
+Backstage uses the [Knex](https://knexjs.org/) library, making it fairly easy to
 switch between database backends.
 
 ## Install PostgreSQL
 
 First, add PostgreSQL to your `backend` package:
 
-```shell
+```bash
 # From your Backstage root directory
-cd packages/backend
-yarn add pg
+yarn add --cwd packages/backend pg
 ```
 
 ## Add PostgreSQL configuration

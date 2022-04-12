@@ -1,5 +1,56 @@
 # @backstage/plugin-catalog-graph
 
+## 0.2.16-next.3
+
+### Patch Changes
+
+- 24254fd433: build(deps): bump `@testing-library/user-event` from 13.5.0 to 14.0.0
+- Updated dependencies
+  - @backstage/core-components@0.9.3-next.2
+  - @backstage/core-plugin-api@1.0.1-next.0
+  - @backstage/plugin-catalog-react@1.0.1-next.3
+
+## 0.2.16-next.2
+
+### Patch Changes
+
+- 99063c39ae: Minor API report cleanup
+- Updated dependencies
+  - @backstage/core-components@0.9.3-next.1
+  - @backstage/plugin-catalog-react@1.0.1-next.2
+  - @backstage/catalog-model@1.0.1-next.1
+
+## 0.2.16-next.1
+
+### Patch Changes
+
+- 77800a32dd: Added renderNode and renderLabel property to EntityRelationsGraph to support customization using CustomNode and CustomLabel components
+- Updated dependencies
+  - @backstage/plugin-catalog-react@1.0.1-next.1
+
+## 0.2.16-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/catalog-model@1.0.1-next.0
+  - @backstage/plugin-catalog-react@1.0.1-next.0
+  - @backstage/core-components@0.9.3-next.0
+  - @backstage/catalog-client@1.0.1-next.0
+
+## 0.2.15
+
+### Patch Changes
+
+- a422d7ce5e: chore(deps): bump `@testing-library/react` from 11.2.6 to 12.1.3
+- f24ef7864e: Minor typo fixes
+- Updated dependencies
+  - @backstage/core-components@0.9.2
+  - @backstage/core-plugin-api@1.0.0
+  - @backstage/plugin-catalog-react@1.0.0
+  - @backstage/catalog-model@1.0.0
+  - @backstage/catalog-client@1.0.0
+
 ## 0.2.14
 
 ### Patch Changes

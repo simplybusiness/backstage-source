@@ -1,5 +1,43 @@
 # @backstage/core-components
 
+## 0.9.3-next.2
+
+### Patch Changes
+
+- 24254fd433: build(deps): bump `@testing-library/user-event` from 13.5.0 to 14.0.0
+- 230ad0826f: Bump to using `@types/node` v16
+- 41fd107189: Exported `IdentityProviders` type.
+- d505e43ffc: Fix highlighting of active sidebar items.
+- Updated dependencies
+  - @backstage/core-plugin-api@1.0.1-next.0
+
+## 0.9.3-next.1
+
+### Patch Changes
+
+- 25b8e8d5b5: Add BackstageTab to overridableComponents so can override styles in a theme
+- a13604b8f7: Adding a name to the core-components Tab styles so can customise in the theme settings
+- 72f3dfd05a: Updated ProxiedSignInPageProps docs
+- 7741e47eae: `<Sidebar />` now accepts additional props `sidebarOptions` and `submenuOptions` to allow further customization
+
+## 0.9.3-next.0
+
+### Patch Changes
+
+- 19648d5cf5: fix support config ref to use backstage/backstage
+
+## 0.9.2
+
+### Patch Changes
+
+- a422d7ce5e: chore(deps): bump `@testing-library/react` from 11.2.6 to 12.1.3
+- 7c8cde4aa1: Change header style `word-wrap` from `break-all` to `break-word`
+- f24ef7864e: Minor typo fixes
+- Updated dependencies
+  - @backstage/core-plugin-api@1.0.0
+  - @backstage/config@1.0.0
+  - @backstage/errors@1.0.0
+
 ## 0.9.1
 
 ### Patch Changes

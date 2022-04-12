@@ -1,5 +1,82 @@
 # @backstage/cli
 
+## 0.17.0-next.3
+
+### Patch Changes
+
+- e80ecad93c: Bump the `rushstack` api generator libraries to their latest versions
+- 3c26b2edb5: build(deps): bump `npm-packlist` from 3.0.0 to 5.0.0
+- f512554910: Updated the plugin template to install version 14 of `@testing-library/user-event`.
+
+  To apply this change to your own project, update the `devDependencies` section in your `package.json` files:
+
+  ```diff
+   "devDependencies": {
+     ... omitted dev dependencies ...
+  -   "@testing-library/user-event": "^13.1.8",
+  +   "@testing-library/user-event": "^14.0.0",
+      ... omitted dev dependencies ...
+   }
+  ```
+
+- df7862cfa6: Fixed a bug were the `react-hot-loader` transform was being applied to backend development builds.
+- 230ad0826f: Bump to using `@types/node` v16
+- 0383cd0228: The `versions:*` commands no longer warns about duplicate plugin libraries, such as `@backstage/plugin-catalog-common`.
+- Updated dependencies
+  - @backstage/config-loader@1.1.0-next.1
+
+## 0.17.0-next.2
+
+### Patch Changes
+
+- 6a341b2d87: build(deps): bump `@spotify/eslint-config-react` from 12.0.0 to 13.0.0
+- 4782f9e925: Fixed misleading log message during frontend plugin creation.
+
+## 0.17.0-next.1
+
+### Minor Changes
+
+- 1f7d4763ab: **BREAKING**: Bump the version range of `jest` from `^26.0.1` to `^27.5.1`. You can find the complete list of breaking changes [here](https://github.com/facebook/jest/releases/tag/v27.0.0).
+
+  We strongly recommend to have completed the [package role migration](https://backstage.io/docs/tutorials/package-role-migration) before upgrading to this version, as the package roles are used to automatically determine the testing environment for each package. If you instead want to set an explicit test environment for each package, you can do so for example in the `"jest"` section in `package.json`. The default test environment for all packages is now `node`, which is also the new Jest default.
+
+  Note that one of the breaking changes of Jest 27 is that the `jsdom` environment no longer includes `setImmediate` and `clearImmediate`, which means you might need to update some of your frontend packages. Another notable change is that `jest.useFakeTimers` now defaults to the `'modern'` implementation, which also mocks microtasks.
+
+### Patch Changes
+
+- c54ce828bd: build(deps): bump `eslint-plugin-jest` from 25.3.4 to 26.1.2
+- f151dfee5a: build(deps): bump `eslint-webpack-plugin` from 2.6.0 to 3.1.1
+- 7e7ba704be: build(deps): bump `@spotify/eslint-config-base` from 12.0.0 to 13.0.0
+- ecd72391fb: build(deps): bump `@spotify/eslint-config-typescript`
+- 5b3079694e: Stop logging "Stopped watcher" when shutting down the development backend.
+
+## 0.16.1-next.0
+
+### Patch Changes
+
+- 6ad0c45648: Added an experimental `package fix` command which applies automated fixes to the target package. The initial fix that is available is to add missing monorepo dependencies to the target package.
+- c47509e1a0: Implemented changes suggested by Deepsource.io including multiple double non-null assertion operators and unexpected awaits for non-promise values.
+- 948a56f401: Added a new experimental `repo list-deprecations` command, which scans the entire project for usage of deprecated APIs.
+- Updated dependencies
+  - @backstage/config-loader@1.0.1-next.0
+
+## 0.16.0
+
+### Minor Changes
+
+- 217547ae51: **BREAKING**: The provided Jest configuration now only matches files with a `.test.` infix, rather than any files that is suffixed with `test.<ext>`. In particular this means that files named just `test.ts` will no longer be considered a test file.
+
+### Patch Changes
+
+- 947ae3b40e: Applied the fix from version `0.15.3` of this package, which is part of the `v0.71.1` release of Backstage.
+- 19eed0edd9: Fix for `overrides` not being properly forwarded from the extra configuration passed to `@backstage/cli/config/eslint-factory`.
+- f24ef7864e: Minor typo fixes
+- Updated dependencies
+  - @backstage/config-loader@1.0.0
+  - @backstage/config@1.0.0
+  - @backstage/errors@1.0.0
+  - @backstage/types@1.0.0
+
 ## 0.15.3
 
 ### Patch Changes

@@ -7,64 +7,51 @@
 
 import { BackstagePlugin } from '@backstage/core-plugin-api';
 import { ExternalRouteRef } from '@backstage/core-plugin-api';
+import { IconComponent } from '@backstage/core-plugin-api';
 import { InfoCardVariants } from '@backstage/core-components';
 
-// Warning: (ae-missing-release-tag) "EntityGroupProfileCard" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
-//
 // @public (undocumented)
-export const EntityGroupProfileCard: ({
-  variant,
-}: {
+export const EntityGroupProfileCard: (props: {
   variant?: InfoCardVariants | undefined;
 }) => JSX.Element;
 
-// Warning: (ae-missing-release-tag) "EntityMembersListCard" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
-//
 // @public (undocumented)
-export const EntityMembersListCard: (_props: {
+export const EntityMembersListCard: (props: {
   memberDisplayTitle?: string | undefined;
   pageSize?: number | undefined;
 }) => JSX.Element;
 
-// Warning: (ae-missing-release-tag) "EntityOwnershipCard" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
-//
 // @public (undocumented)
-export const EntityOwnershipCard: ({
-  variant,
-  entityFilterKind,
-}: {
+export const EntityOwnershipCard: (props: {
   variant?: InfoCardVariants | undefined;
   entityFilterKind?: string[] | undefined;
+  hideRelationsToggle?: boolean | undefined;
+  relationsType?: string | undefined;
 }) => JSX.Element;
 
-// Warning: (ae-missing-release-tag) "EntityUserProfileCard" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
-//
 // @public (undocumented)
-export const EntityUserProfileCard: ({
-  variant,
-}: {
+export const EntityUserProfileCard: (props: {
   variant?: InfoCardVariants | undefined;
 }) => JSX.Element;
 
-// Warning: (ae-missing-release-tag) "GroupProfileCard" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
-//
 // @public (undocumented)
-export const GroupProfileCard: ({
-  variant,
-}: {
-  variant?: InfoCardVariants | undefined;
+export const GroupProfileCard: (props: {
+  variant?: InfoCardVariants;
 }) => JSX.Element;
 
-// Warning: (ae-missing-release-tag) "MembersListCard" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
-//
 // @public (undocumented)
-export const MembersListCard: (_props: {
+export const MembersListCard: (props: {
   memberDisplayTitle?: string;
   pageSize?: number;
 }) => JSX.Element;
 
-// Warning: (ae-missing-release-tag) "orgPlugin" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
-//
+// @public
+export const MyGroupsSidebarItem: (props: {
+  singularTitle: string;
+  pluralTitle: string;
+  icon: IconComponent;
+}) => JSX.Element | null;
+
 // @public (undocumented)
 const orgPlugin: BackstagePlugin<
   {},
@@ -75,23 +62,16 @@ const orgPlugin: BackstagePlugin<
 export { orgPlugin };
 export { orgPlugin as plugin };
 
-// Warning: (ae-missing-release-tag) "OwnershipCard" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
-//
 // @public (undocumented)
-export const OwnershipCard: ({
-  variant,
-  entityFilterKind,
-}: {
-  variant?: InfoCardVariants | undefined;
-  entityFilterKind?: string[] | undefined;
+export const OwnershipCard: (props: {
+  variant?: InfoCardVariants;
+  entityFilterKind?: string[];
+  hideRelationsToggle?: boolean;
+  relationsType?: string;
 }) => JSX.Element;
 
-// Warning: (ae-missing-release-tag) "UserProfileCard" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
-//
 // @public (undocumented)
-export const UserProfileCard: ({
-  variant,
-}: {
-  variant?: InfoCardVariants | undefined;
+export const UserProfileCard: (props: {
+  variant?: InfoCardVariants;
 }) => JSX.Element;
 ```

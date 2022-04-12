@@ -17,7 +17,6 @@
 import { PluginDatabaseManager, UrlReader } from '@backstage/backend-common';
 import {
   DefaultNamespaceEntityPolicy,
-  Entity,
   EntityPolicies,
   EntityPolicy,
   FieldFormatEntityPolicy,
@@ -32,7 +31,6 @@ import { ScmIntegrations } from '@backstage/integration';
 import { createHash } from 'crypto';
 import { Router } from 'express';
 import lodash, { keyBy } from 'lodash';
-import { EntitiesSearchFilter } from '../catalog';
 
 import {
   CatalogProcessor,
@@ -77,10 +75,16 @@ import { DefaultCatalogRulesEnforcer } from '../ingestion/CatalogRules';
 import { Config } from '@backstage/config';
 import { Logger } from 'winston';
 import { connectEntityProviders } from '../processing/connectEntityProviders';
-import { permissionRules as catalogPermissionRules } from '../permissions/rules';
-import { PermissionAuthorizer } from '@backstage/plugin-permission-common';
 import {
-  PermissionRule,
+  CatalogPermissionRule,
+  permissionRules as catalogPermissionRules,
+} from '../permissions/rules';
+import {
+  PermissionAuthorizer,
+  PermissionEvaluator,
+  toPermissionEvaluator,
+} from '@backstage/plugin-permission-common';
+import {
   createConditionTransformer,
   createPermissionIntegrationRouter,
 } from '@backstage/plugin-permission-node';
@@ -95,7 +99,7 @@ export type CatalogEnvironment = {
   database: PluginDatabaseManager;
   config: Config;
   reader: UrlReader;
-  permissions: PermissionAuthorizer;
+  permissions: PermissionEvaluator | PermissionAuthorizer;
 };
 
 /**
@@ -135,11 +139,7 @@ export class CatalogBuilder {
       maxSeconds: 150,
     });
   private locationAnalyzer: LocationAnalyzer | undefined = undefined;
-  private permissionRules: PermissionRule<
-    Entity,
-    EntitiesSearchFilter,
-    unknown[]
-  >[];
+  private permissionRules: CatalogPermissionRule[];
 
   /**
    * Creates a catalog builder.
@@ -339,14 +339,9 @@ export class CatalogBuilder {
    * {@link @backstage/plugin-permission-node#PermissionRule}.
    *
    * @param permissionRules - Additional permission rules
+   * @alpha
    */
-  addPermissionRules(
-    ...permissionRules: PermissionRule<
-      Entity,
-      EntitiesSearchFilter,
-      unknown[]
-    >[]
-  ) {
+  addPermissionRules(...permissionRules: CatalogPermissionRule[]) {
     this.permissionRules.push(...permissionRules);
   }
 
@@ -385,9 +380,20 @@ export class CatalogBuilder {
       policy,
     });
     const unauthorizedEntitiesCatalog = new DefaultEntitiesCatalog(dbClient);
+
+    let permissionEvaluator: PermissionEvaluator;
+    if ('query' in permissions) {
+      permissionEvaluator = permissions as PermissionEvaluator;
+    } else {
+      logger.warn(
+        'PermissionAuthorizer is deprecated. Please use an instance of PermissionEvaluator instead of PermissionAuthorizer in PluginEnvironment#permissions',
+      );
+      permissionEvaluator = toPermissionEvaluator(permissions);
+    }
+
     const entitiesCatalog = new AuthorizedEntitiesCatalog(
       unauthorizedEntitiesCatalog,
-      permissions,
+      permissionEvaluator,
       createConditionTransformer(this.permissionRules),
     );
     const permissionIntegrationRouter = createPermissionIntegrationRouter({
@@ -437,16 +443,17 @@ export class CatalogBuilder {
       this.locationAnalyzer ?? new RepoLocationAnalyzer(logger, integrations);
     const locationService = new AuthorizedLocationService(
       new DefaultLocationService(locationStore, orchestrator),
-      permissions,
+      permissionEvaluator,
     );
     const refreshService = new AuthorizedRefreshService(
       new DefaultRefreshService({ database: processingDatabase }),
-      permissions,
+      permissionEvaluator,
     );
     const router = await createRouter({
       entitiesCatalog,
       locationAnalyzer,
       locationService,
+      orchestrator,
       refreshService,
       logger,
       config,

@@ -66,10 +66,14 @@ import { SearchPage } from '@backstage/plugin-search';
 import { TechRadarPage } from '@backstage/plugin-tech-radar';
 import {
   TechDocsIndexPage,
-  techdocsPlugin,
   TechDocsReaderPage,
+  techdocsPlugin,
 } from '@backstage/plugin-techdocs';
-import { UserSettingsPage } from '@backstage/plugin-user-settings';
+import {
+  UserSettingsPage,
+  UserSettingsTab,
+} from '@backstage/plugin-user-settings';
+import { AdvancedSettings } from './components/advancedSettings';
 import AlarmIcon from '@material-ui/icons/Alarm';
 import React from 'react';
 import { hot } from 'react-hot-loader/root';
@@ -79,6 +83,7 @@ import { entityPage } from './components/catalog/EntityPage';
 import { homePage } from './components/home/HomePage';
 import { Root } from './components/Root';
 import { LowerCaseValuePickerFieldExtension } from './components/scaffolder/customScaffolderExtensions';
+import { defaultPreviewTemplate } from './components/scaffolder/defaultPreviewTemplate';
 import { searchPage } from './components/search/SearchPage';
 import { providers } from './identityProviders';
 import * as plugins from './plugins';
@@ -179,6 +184,7 @@ const routes = (
       path="/create"
       element={
         <ScaffolderPage
+          defaultPreviewTemplate={defaultPreviewTemplate}
           groups={[
             {
               title: 'Recommended',
@@ -215,7 +221,11 @@ const routes = (
       path="/cost-insights/labeling-jobs"
       element={<CostInsightsLabelDataflowInstructionsPage />}
     />
-    <Route path="/settings" element={<UserSettingsPage />} />
+    <Route path="/settings" element={<UserSettingsPage />}>
+      <UserSettingsTab path="/advanced" title="Advanced">
+        <AdvancedSettings />
+      </UserSettingsTab>
+    </Route>
     <Route path="/azure-pull-requests" element={<AzurePullRequestsPage />} />
     <Route path="/apache-airflow" element={<ApacheAirflowPage />} />
   </FlatRoutes>

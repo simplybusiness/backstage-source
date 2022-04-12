@@ -25,6 +25,7 @@ import {
 } from '@backstage/core-components';
 import { configApiRef, useApi, useRouteRef } from '@backstage/core-plugin-api';
 import {
+  CatalogFilterLayout,
   EntityLifecyclePicker,
   EntityListProvider,
   EntityOwnerPicker,
@@ -36,11 +37,6 @@ import {
 import React from 'react';
 import { createComponentRouteRef } from '../../routes';
 import { CatalogTable, CatalogTableRow } from '../CatalogTable';
-import {
-  FilteredEntityLayout,
-  EntityListContainer,
-  FilterContainer,
-} from '../FilteredEntityLayout';
 import { CatalogKindHeader } from '../CatalogKindHeader';
 
 /**
@@ -52,10 +48,18 @@ export interface DefaultCatalogPageProps {
   initiallySelectedFilter?: UserListFilterKind;
   columns?: TableColumn<CatalogTableRow>[];
   actions?: TableProps<CatalogTableRow>['actions'];
+  initialKind?: string;
+  tableOptions?: TableProps<CatalogTableRow>['options'];
 }
 
 export function DefaultCatalogPage(props: DefaultCatalogPageProps) {
-  const { columns, actions, initiallySelectedFilter = 'owned' } = props;
+  const {
+    columns,
+    actions,
+    initiallySelectedFilter = 'owned',
+    initialKind = 'component',
+    tableOptions = {},
+  } = props;
   const orgName =
     useApi(configApiRef).getOptionalString('organization.name') ?? 'Backstage';
   const createComponentLink = useRouteRef(createComponentRouteRef);
@@ -64,25 +68,31 @@ export function DefaultCatalogPage(props: DefaultCatalogPageProps) {
     <PageWithHeader title={`${orgName} Catalog`} themeId="home">
       <EntityListProvider>
         <Content>
-          <ContentHeader titleComponent={<CatalogKindHeader />}>
+          <ContentHeader
+            titleComponent={<CatalogKindHeader initialFilter={initialKind} />}
+          >
             <CreateButton
               title="Create Component"
               to={createComponentLink && createComponentLink()}
             />
             <SupportButton>All your software catalog entities</SupportButton>
           </ContentHeader>
-          <FilteredEntityLayout>
-            <FilterContainer>
+          <CatalogFilterLayout>
+            <CatalogFilterLayout.Filters>
               <EntityTypePicker />
               <UserListPicker initialFilter={initiallySelectedFilter} />
               <EntityOwnerPicker />
               <EntityLifecyclePicker />
               <EntityTagPicker />
-            </FilterContainer>
-            <EntityListContainer>
-              <CatalogTable columns={columns} actions={actions} />
-            </EntityListContainer>
-          </FilteredEntityLayout>
+            </CatalogFilterLayout.Filters>
+            <CatalogFilterLayout.Content>
+              <CatalogTable
+                columns={columns}
+                actions={actions}
+                tableOptions={tableOptions}
+              />
+            </CatalogFilterLayout.Content>
+          </CatalogFilterLayout>
         </Content>
       </EntityListProvider>
     </PageWithHeader>

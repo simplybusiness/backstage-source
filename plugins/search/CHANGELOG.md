@@ -1,5 +1,53 @@
 # @backstage/plugin-search
 
+## 0.7.5-next.1
+
+### Patch Changes
+
+- 24254fd433: build(deps): bump `@testing-library/user-event` from 13.5.0 to 14.0.0
+- 5c062f275e: Support customizing the content of the `SidebarSearchModal`
+- 230ad0826f: Bump to using `@types/node` v16
+- ab230a433f: The following exports has been moved to `@backstage/plugin-search-react` and will be removed in the next release. import from `@backstage/plugin-search-react` instead.
+
+  - `SearchApi` interface.
+  - `searchApiRef`
+  - `SearchContext`
+  - `SearchContextProvider`
+  - `useSearch`
+
+- Updated dependencies
+  - @backstage/core-components@0.9.3-next.2
+  - @backstage/core-plugin-api@1.0.1-next.0
+  - @backstage/plugin-catalog-react@1.0.1-next.3
+  - @backstage/plugin-search-react@0.1.0-next.0
+
+## 0.7.5-next.0
+
+### Patch Changes
+
+- 38e01f2f70: Switch to `SearchDocument` type in `DefaultResultListItem` props
+- Updated dependencies
+  - @backstage/catalog-model@1.0.1-next.0
+  - @backstage/plugin-search-common@0.3.3-next.0
+  - @backstage/plugin-catalog-react@1.0.1-next.0
+  - @backstage/core-components@0.9.3-next.0
+
+## 0.7.4
+
+### Patch Changes
+
+- a422d7ce5e: chore(deps): bump `@testing-library/react` from 11.2.6 to 12.1.3
+- f24ef7864e: Minor typo fixes
+- Updated dependencies
+  - @backstage/core-components@0.9.2
+  - @backstage/core-plugin-api@1.0.0
+  - @backstage/plugin-catalog-react@1.0.0
+  - @backstage/catalog-model@1.0.0
+  - @backstage/config@1.0.0
+  - @backstage/errors@1.0.0
+  - @backstage/types@1.0.0
+  - @backstage/plugin-search-common@0.3.2
+
 ## 0.7.3
 
 ### Patch Changes

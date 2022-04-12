@@ -1,5 +1,84 @@
 # @backstage/plugin-catalog
 
+## 1.1.0-next.3
+
+### Patch Changes
+
+- 24254fd433: build(deps): bump `@testing-library/user-event` from 13.5.0 to 14.0.0
+- Updated dependencies
+  - @backstage/core-components@0.9.3-next.2
+  - @backstage/core-plugin-api@1.0.1-next.0
+  - @backstage/integration-react@1.0.1-next.2
+  - @backstage/plugin-catalog-react@1.0.1-next.3
+
+## 1.1.0-next.2
+
+### Patch Changes
+
+- f6d2694092: Added tableOptions property to CatalogTable and DefaultCatalogPage to support customization of the Catalog Table. Related issue #10453
+- 5d5fdbe541: Columns in CatalogTable now change depending on the entity kind, ensuring only relevant columns are displayed.
+- Updated dependencies
+  - @backstage/core-components@0.9.3-next.1
+  - @backstage/plugin-catalog-react@1.0.1-next.2
+  - @backstage/catalog-model@1.0.1-next.1
+
+## 1.1.0-next.1
+
+### Minor Changes
+
+- bdc61b4002: Expose 'initalFilter' through initialKind prop on Catalog Page.
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-catalog-react@1.0.1-next.1
+  - @backstage/plugin-catalog-common@1.0.1-next.1
+  - @backstage/integration-react@1.0.1-next.1
+  - @backstage/plugin-search-common@0.3.3-next.1
+
+## 1.0.1-next.0
+
+### Patch Changes
+
+- 2a3cac4c60: Corrected replacements for depreciated FilteredEntityLayout items
+- Updated dependencies
+  - @backstage/catalog-model@1.0.1-next.0
+  - @backstage/plugin-search-common@0.3.3-next.0
+  - @backstage/plugin-catalog-react@1.0.1-next.0
+  - @backstage/core-components@0.9.3-next.0
+  - @backstage/catalog-client@1.0.1-next.0
+  - @backstage/integration-react@1.0.1-next.0
+  - @backstage/plugin-catalog-common@1.0.1-next.0
+
+## 1.0.0
+
+### Major Changes
+
+- b58c70c223: This package has been promoted to v1.0! To understand how this change affects the package, please check out our [versioning policy](https://backstage.io/docs/overview/versioning-policy).
+
+### Patch Changes
+
+- a422d7ce5e: chore(deps): bump `@testing-library/react` from 11.2.6 to 12.1.3
+- c689d7a94c: **DEPRECATION**: The `FilteredEntityLayout` and related components have been moved to `@backstage/plugin-catalog-react` and renamed. The original components are now deprecated and should be replaced as follows:
+
+  - `FilteredEntityLayout` -> `CatalogFilterLayout`
+  - `FilterContainer` -> `CatalogFilterLayout.Filters`
+  - `EntityListContainer` -> `CatalogFilterLayout.Content`
+
+- d4afa7e30d: Fix for `EntitySwitch` not properly falling back to render the default entity page when the entity is missing.
+- f24ef7864e: Minor typo fixes
+- Updated dependencies
+  - @backstage/core-components@0.9.2
+  - @backstage/core-plugin-api@1.0.0
+  - @backstage/integration-react@1.0.0
+  - @backstage/plugin-catalog-react@1.0.0
+  - @backstage/catalog-model@1.0.0
+  - @backstage/catalog-client@1.0.0
+  - @backstage/errors@1.0.0
+  - @backstage/types@1.0.0
+  - @backstage/plugin-catalog-common@1.0.0
+  - @backstage/plugin-search-common@0.3.2
+
 ## 0.10.0
 
 ### Minor Changes

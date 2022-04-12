@@ -1,5 +1,105 @@
 # @backstage/plugin-org
 
+## 0.5.4-next.3
+
+### Patch Changes
+
+- 24254fd433: build(deps): bump `@testing-library/user-event` from 13.5.0 to 14.0.0
+- 230ad0826f: Bump to using `@types/node` v16
+- Updated dependencies
+  - @backstage/core-components@0.9.3-next.2
+  - @backstage/core-plugin-api@1.0.1-next.0
+  - @backstage/plugin-catalog-react@1.0.1-next.3
+
+## 0.5.4-next.2
+
+### Patch Changes
+
+- cb592bfce7: Provides the ability to hide the relations toggle on the `OwnershipCard` as well as setting a default relation type.
+
+  To hide the toggle simply include the `hideRelationsToggle` prop like this:
+
+  ```tsx
+  <EntityOwnershipCard
+    variant="gridItem"
+    entityFilterKind={customEntityFilterKind}
+    hideRelationsToggle
+  />
+  ```
+
+  To set the default relation type, add the `relationsType` prop with a value of direct or aggregated, the default if not provided is direct. Here is an example:
+
+  ```tsx
+  <EntityOwnershipCard
+    variant="gridItem"
+    entityFilterKind={customEntityFilterKind}
+    relationsType="aggregated"
+  />
+  ```
+
+- d014fe2cb4: Introduced a new MyGroupsSidebarItem SidebarItem that links to one or more groups based on the logged in user's membership.
+
+  To use MyGroupsSidebarItem you'll need to add it to your `Root.tsx` like this:
+
+  ```diff
+  // app/src/components/Root/Root.tsx
+  + import { MyGroupsSidebarItem } from '@backstage/plugin-org';
+  + import GroupIcon from '@material-ui/icons/People';
+
+  <SidebarPage>
+      <Sidebar>
+        //...
+        <SidebarGroup label="Menu" icon={<MenuIcon />}>
+          {/* Global nav, not org-specific */}
+          //...
+          <SidebarItem icon={HomeIcon} to="catalog" text="Home" />
+  +       <MyGroupsSidebarItem
+  +         singularTitle="My Squad"
+  +         pluralTitle="My Squads"
+  +         icon={GroupIcon}
+  +       />
+         //...
+        </SidebarGroup>
+      </ Sidebar>
+  </SidebarPage>
+  ```
+
+- 0bada4fc4d: Added the `metadata.description` to the bottom of each member on the MembersListCard
+- 99063c39ae: Minor API report cleanup
+- Updated dependencies
+  - @backstage/core-components@0.9.3-next.1
+  - @backstage/plugin-catalog-react@1.0.1-next.2
+  - @backstage/catalog-model@1.0.1-next.1
+
+## 0.5.4-next.1
+
+### Patch Changes
+
+- 111995470d: add aggregated ownership type for kind group in OwnershipCard
+- Updated dependencies
+  - @backstage/plugin-catalog-react@1.0.1-next.1
+
+## 0.5.4-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/catalog-model@1.0.1-next.0
+  - @backstage/plugin-catalog-react@1.0.1-next.0
+  - @backstage/core-components@0.9.3-next.0
+
+## 0.5.3
+
+### Patch Changes
+
+- a422d7ce5e: chore(deps): bump `@testing-library/react` from 11.2.6 to 12.1.3
+- 132189e466: Updated the code to handle User kind `spec.memberOf` now being optional.
+- Updated dependencies
+  - @backstage/core-components@0.9.2
+  - @backstage/core-plugin-api@1.0.0
+  - @backstage/plugin-catalog-react@1.0.0
+  - @backstage/catalog-model@1.0.0
+
 ## 0.5.2
 
 ### Patch Changes

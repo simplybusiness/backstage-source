@@ -23,9 +23,14 @@ import { InputError } from '@backstage/errors';
 import { Config } from '@backstage/config';
 import { JsonObject, JsonValue } from '@backstage/types';
 import { getBearerTokenFromAuthorizationHeader } from '@backstage/plugin-auth-node';
-import { PermissionAuthorizer } from '@backstage/plugin-permission-common';
+import {
+  PermissionAuthorizer,
+  PermissionEvaluator,
+  toPermissionEvaluator,
+} from '@backstage/plugin-permission-common';
 import {
   DocumentTypeInfo,
+  IndexableResultSet,
   SearchResultSet,
 } from '@backstage/plugin-search-common';
 import { SearchEngine } from '@backstage/plugin-search-backend-node';
@@ -49,7 +54,7 @@ const jsonObjectSchema: z.ZodSchema<JsonObject> = z.lazy(() => {
 export type RouterOptions = {
   engine: SearchEngine;
   types: Record<string, DocumentTypeInfo>;
-  permissions: PermissionAuthorizer;
+  permissions: PermissionEvaluator | PermissionAuthorizer;
   config: Config;
   logger: Logger;
 };
@@ -70,8 +75,23 @@ export async function createRouter(
     pageCursor: z.string().optional(),
   });
 
+  let permissionEvaluator: PermissionEvaluator;
+  if ('query' in permissions) {
+    permissionEvaluator = permissions as PermissionEvaluator;
+  } else {
+    logger.warn(
+      'PermissionAuthorizer is deprecated. Please use an instance of PermissionEvaluator instead of PermissionAuthorizer in PluginEnvironment#permissions',
+    );
+    permissionEvaluator = toPermissionEvaluator(permissions);
+  }
+
   const engine = config.getOptionalBoolean('permission.enabled')
-    ? new AuthorizedSearchEngine(inputEngine, types, permissions, config)
+    ? new AuthorizedSearchEngine(
+        inputEngine,
+        types,
+        permissionEvaluator,
+        config,
+      )
     : inputEngine;
 
   const filterResultSet = ({ results, ...resultSet }: SearchResultSet) => ({
@@ -87,6 +107,17 @@ export async function createRouter(
       }
       return isAllowed;
     }),
+  });
+
+  const toSearchResults = (resultSet: IndexableResultSet): SearchResultSet => ({
+    ...resultSet,
+    results: resultSet.results.map(result => ({
+      ...result,
+      document: {
+        ...result.document,
+        authorization: undefined,
+      },
+    })),
   });
 
   const router = Router();
@@ -116,7 +147,7 @@ export async function createRouter(
       try {
         const resultSet = await engine?.query(query, { token });
 
-        res.send(filterResultSet(resultSet));
+        res.send(filterResultSet(toSearchResults(resultSet)));
       } catch (err) {
         throw new Error(
           `There was a problem performing the search query. ${err}`,

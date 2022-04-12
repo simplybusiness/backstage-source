@@ -1,5 +1,53 @@
 # @backstage/plugin-jenkins-backend
 
+## 0.1.20-next.2
+
+### Patch Changes
+
+- 1917923ab8: Use `PermissionEvaluator` instead of `PermissionAuthorizer`, which is now deprecated.
+- b013de3f50: feature: provide access token to JenkinsInstanceConfig. It can be passed to other backend calls if authentication enabled. DefaultJenkinsInfoProvider sends always this token to catalog api if access token exists.
+- Updated dependencies
+  - @backstage/plugin-permission-common@0.6.0-next.1
+  - @backstage/backend-common@0.13.2-next.2
+
+## 0.1.20-next.1
+
+### Patch Changes
+
+- ca91107110: Fixed possible type error if jenkins response contains null values
+- Updated dependencies
+  - @backstage/plugin-permission-common@0.6.0-next.0
+  - @backstage/plugin-jenkins-common@0.1.3-next.1
+  - @backstage/backend-common@0.13.2-next.1
+
+## 0.1.20-next.0
+
+### Patch Changes
+
+- 71f8708f00: Make `resourceRef` required in `JenkinsApi` to match usage.
+- Updated dependencies
+  - @backstage/catalog-model@1.0.1-next.0
+  - @backstage/plugin-auth-node@0.2.0-next.0
+  - @backstage/backend-common@0.13.2-next.0
+  - @backstage/catalog-client@1.0.1-next.0
+  - @backstage/plugin-jenkins-common@0.1.3-next.0
+
+## 0.1.19
+
+### Patch Changes
+
+- 89c7e47967: Minor README update
+- f24ef7864e: Minor typo fixes
+- Updated dependencies
+  - @backstage/backend-common@0.13.1
+  - @backstage/catalog-model@1.0.0
+  - @backstage/catalog-client@1.0.0
+  - @backstage/config@1.0.0
+  - @backstage/errors@1.0.0
+  - @backstage/plugin-permission-common@0.5.3
+  - @backstage/plugin-auth-node@0.1.6
+  - @backstage/plugin-jenkins-common@0.1.2
+
 ## 0.1.18
 
 ### Patch Changes

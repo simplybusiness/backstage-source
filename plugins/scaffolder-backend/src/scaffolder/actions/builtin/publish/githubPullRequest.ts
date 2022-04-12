@@ -37,7 +37,10 @@ class GithubResponseError extends CustomErrorBase {}
 /** @public */
 export interface OctokitWithPullRequestPluginClient {
   createPullRequest(options: createPullRequest.Options): Promise<{
-    data: { html_url: string };
+    data: {
+      html_url: string;
+      number: number;
+    };
   } | null>;
 }
 
@@ -112,6 +115,7 @@ export const createPublishGithubPullRequestAction = ({
     branchName: string;
     description: string;
     repoUrl: string;
+    draft?: boolean;
     targetPath?: string;
     sourcePath?: string;
     token?: string;
@@ -142,6 +146,11 @@ export const createPublishGithubPullRequestAction = ({
             title: 'Pull Request Description',
             description: 'The description of the pull request',
           },
+          draft: {
+            type: 'boolean',
+            title: 'Create as Draft',
+            description: 'Create a draft pull request',
+          },
           sourcePath: {
             type: 'string',
             title: 'Working Subdirectory',
@@ -169,6 +178,11 @@ export const createPublishGithubPullRequestAction = ({
             title: 'Pull Request URL',
             description: 'Link to the pull request in Github',
           },
+          pullRequestNumber: {
+            type: 'number',
+            title: 'Pull Request Number',
+            description: 'The pull request number',
+          },
         },
       },
     },
@@ -178,6 +192,7 @@ export const createPublishGithubPullRequestAction = ({
         branchName,
         title,
         description,
+        draft,
         targetPath,
         sourcePath,
         token: providedToken,
@@ -256,6 +271,7 @@ export const createPublishGithubPullRequestAction = ({
           changes,
           body: description,
           head: branchName,
+          draft,
         });
 
         if (!response) {
@@ -263,6 +279,7 @@ export const createPublishGithubPullRequestAction = ({
         }
 
         ctx.output('remoteUrl', response.data.html_url);
+        ctx.output('pullRequestNumber', response.data.number);
       } catch (e) {
         throw new GithubResponseError('Pull request creation failed', e);
       }

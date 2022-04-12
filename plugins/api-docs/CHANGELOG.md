@@ -1,5 +1,61 @@
 # @backstage/plugin-api-docs
 
+## 0.8.4-next.3
+
+### Patch Changes
+
+- 24254fd433: build(deps): bump `@testing-library/user-event` from 13.5.0 to 14.0.0
+- 230ad0826f: Bump to using `@types/node` v16
+- 1c8ebf7af2: Add dedicated gRPC api definition widget
+- Updated dependencies
+  - @backstage/core-components@0.9.3-next.2
+  - @backstage/core-plugin-api@1.0.1-next.0
+  - @backstage/plugin-catalog-react@1.0.1-next.3
+  - @backstage/plugin-catalog@1.1.0-next.3
+
+## 0.8.4-next.2
+
+### Patch Changes
+
+- ae321bd414: build(deps): bump `@asyncapi/react-component`
+- Updated dependencies
+  - @backstage/core-components@0.9.3-next.1
+  - @backstage/plugin-catalog-react@1.0.1-next.2
+  - @backstage/plugin-catalog@1.1.0-next.2
+  - @backstage/catalog-model@1.0.1-next.1
+
+## 0.8.4-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-catalog-react@1.0.1-next.1
+  - @backstage/plugin-catalog@1.1.0-next.1
+
+## 0.8.4-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/catalog-model@1.0.1-next.0
+  - @backstage/plugin-catalog@1.0.1-next.0
+  - @backstage/plugin-catalog-react@1.0.1-next.0
+  - @backstage/core-components@0.9.3-next.0
+
+## 0.8.3
+
+### Patch Changes
+
+- a422d7ce5e: chore(deps): bump `@testing-library/react` from 11.2.6 to 12.1.3
+- c689d7a94c: Switched to using `CatalogFilterLayout` from `@backstage/plugin-catalog-react`.
+- f24ef7864e: Minor typo fixes
+- Updated dependencies
+  - @backstage/core-components@0.9.2
+  - @backstage/core-plugin-api@1.0.0
+  - @backstage/plugin-catalog-react@1.0.0
+  - @backstage/plugin-catalog@1.0.0
+  - @backstage/catalog-model@1.0.0
+
 ## 0.8.2
 
 ### Patch Changes

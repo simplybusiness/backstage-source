@@ -42,6 +42,13 @@ techdocs:
       # Defaults to false, which means that the techdocs-core plugin is always added to the mkdocs file.
       omitTechdocsCorePlugin: false
 
+      # (Optional and not recommended) Configures the techdocs generator to
+      # attempt to ensure an index.md exists falling back to using <docs-dir>/README.md
+      # or README.md in case a default <docs-dir>/index.md is not provided.
+      # Note that https://www.mkdocs.org/user-guide/configuration/#edit_uri behavior
+      # will be broken in these scenarios.
+      legacyCopyReadmeMdToIndexMd: false
+
   # techdocs.builder can be either 'local' or 'external.
   # Using the default build strategy, if builder is set to 'local' and you open a TechDocs page,
   # techdocs-backend will try to generate the docs, publish to storage and show the generated docs afterwords.
@@ -160,10 +167,4 @@ techdocs:
     # object was not found (e.g. when the cache sercice is unavailable). The
     # default value is 1000
     readTimeout: 500
-
-  # (Optional and Legacy) Just another route in techdocs-backend where TechDocs requests the static files from. This URL uses an HTTP middleware
-  # to serve files from either a local directory or an External storage provider.
-  # You don't have to specify this anymore.
-
-  storageUrl: http://localhost:7007/api/techdocs/static/docs
 ```

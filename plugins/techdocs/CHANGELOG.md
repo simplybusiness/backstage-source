@@ -1,5 +1,159 @@
 # @backstage/plugin-techdocs
 
+## 1.1.0-next.3
+
+### Minor Changes
+
+- ace749b785: TechDocs supports a new, experimental method of customization: addons!
+
+  To customize the standalone TechDocs reader page experience, update your `/packages/app/src/App.tsx` in the following way:
+
+  ```diff
+  import { TechDocsIndexPage, TechDocsReaderPage } from '@backstage/plugin-techdocs';
+  + import { TechDocsAddons } from '@backstage/plugin-techdocs-react';
+  + import { SomeAddon } from '@backstage/plugin-some-plugin';
+
+  // ...
+
+      <Route path="/docs" element={<TechDocsIndexPage />} />
+      <Route
+        path="/docs/:namespace/:kind/:name/*"
+        element={<TechDocsReaderPage />}
+      >
+  +      <TechDocsAddons>
+  +        <SomeAddon />
+  +      </TechDocsAddons>
+      </Route>
+
+  // ...
+  ```
+
+  To customize the TechDocs reader experience on the Catalog entity page, update your `packages/app/src/components/catalog/EntityPage.tsx` in the following way:
+
+  ```diff
+  import { EntityTechdocsContent } from '@backstage/plugin-techdocs';
+  + import { TechDocsAddons } from '@backstage/plugin-techdocs-react';
+  + import { SomeAddon } from '@backstage/plugin-some-plugin';
+
+  // ...
+
+    <EntityLayoutWrapper>
+      <EntityLayout.Route path="/" title="Overview">
+        {overviewContent}
+      </EntityLayout.Route>
+
+      <EntityLayout.Route path="/docs" title="Docs">
+  -      <EntityTechDocsContent />
+  +      <EntityTechdocsContent>
+  +        <TechDocsAddons>
+  +          <SomeAddon />
+  +        </TechDocsAddons>
+  +      </EntityTechdocsContent>
+      </EntityLayout.Route>
+    </EntityLayoutWrapper>
+
+  // ...
+  ```
+
+  If you do not wish to customize your TechDocs reader experience in this way at this time, no changes are necessary!
+
+### Patch Changes
+
+- ab230a433f: imports from `@backstage/plugin-search-react` instead of `@backstage/plugin-search`
+- 24254fd433: build(deps): bump `@testing-library/user-event` from 13.5.0 to 14.0.0
+- 230ad0826f: Bump to using `@types/node` v16
+- Updated dependencies
+  - @backstage/core-app-api@1.0.1-next.1
+  - @backstage/core-components@0.9.3-next.2
+  - @backstage/core-plugin-api@1.0.1-next.0
+  - @backstage/integration-react@1.0.1-next.2
+  - @backstage/plugin-catalog-react@1.0.1-next.3
+  - @backstage/plugin-search-react@0.1.0-next.0
+  - @backstage/integration@1.1.0-next.2
+  - @backstage/plugin-techdocs-react@0.1.0-next.0
+
+## 1.0.1-next.2
+
+### Patch Changes
+
+- f0fb9153b7: Fix broken query selectors on techdocs
+- 9975ff9852: Applied the fix from version 1.0.1 of this package, which is part of the v1.0.2 release of Backstage.
+- Updated dependencies
+  - @backstage/core-components@0.9.3-next.1
+  - @backstage/plugin-catalog-react@1.0.1-next.2
+  - @backstage/catalog-model@1.0.1-next.1
+
+## 1.0.1
+
+### Patch Changes
+
+- Pin the `event-source-polyfill` dependency to version 1.0.25
+
+## 1.0.1-next.1
+
+### Patch Changes
+
+- 0152c0de22: Some documentation layout tweaks:
+
+  - drawer toggle margins
+  - code block margins
+  - sidebar drawer width
+  - inner content width
+  - footer link width
+  - sidebar table of contents scroll
+
+- Updated dependencies
+  - @backstage/integration@1.1.0-next.1
+  - @backstage/plugin-catalog-react@1.0.1-next.1
+  - @backstage/integration-react@1.0.1-next.1
+
+## 1.0.1-next.0
+
+### Patch Changes
+
+- fe53fe97d7: Fix permalink scrolling for anchors where the id starts with a number.
+- Updated dependencies
+  - @backstage/catalog-model@1.0.1-next.0
+  - @backstage/plugin-search@0.7.5-next.0
+  - @backstage/integration@1.0.1-next.0
+  - @backstage/plugin-catalog-react@1.0.1-next.0
+  - @backstage/core-components@0.9.3-next.0
+  - @backstage/integration-react@1.0.1-next.0
+
+## 1.0.0
+
+### Major Changes
+
+- b58c70c223: This package has been promoted to v1.0! To understand how this change affects the package, please check out our [versioning policy](https://backstage.io/docs/overview/versioning-policy).
+
+### Minor Changes
+
+- 700d93ff41: Removed deprecated exports, including:
+
+  - deprecated `DocsResultListItem` is now deleted and fully replaced with `TechDocsSearchResultListItem`
+  - deprecated `TechDocsPage` is now deleted and fully replaced with `TechDocsReaderPage`
+  - deprecated `TechDocsPageHeader` is now deleted and fully replaced with `TechDocsReaderPageHeader`
+  - deprecated `TechDocsPageHeaderProps` is now deleted and fully replaced with `TechDocsReaderPageHeaderProps`
+  - deprecated `TechDocsPageRenderFunction` is now deleted and fully replaced with `TechDocsReaderPageRenderFunction`
+  - deprecated config `techdocs.requestUrl` is now deleted and fully replaced with the discoveryApi
+
+### Patch Changes
+
+- a422d7ce5e: chore(deps): bump `@testing-library/react` from 11.2.6 to 12.1.3
+- c689d7a94c: Switched to using `CatalogFilterLayout` from `@backstage/plugin-catalog-react`.
+- f24ef7864e: Minor typo fixes
+- 06af9e8d17: Long sidebars will no longer overflow the footer and will properly show a scrollbar when needed.
+- Updated dependencies
+  - @backstage/core-components@0.9.2
+  - @backstage/core-plugin-api@1.0.0
+  - @backstage/integration-react@1.0.0
+  - @backstage/plugin-catalog-react@1.0.0
+  - @backstage/plugin-search@0.7.4
+  - @backstage/catalog-model@1.0.0
+  - @backstage/integration@1.0.0
+  - @backstage/config@1.0.0
+  - @backstage/errors@1.0.0
+
 ## 0.15.1
 
 ### Patch Changes

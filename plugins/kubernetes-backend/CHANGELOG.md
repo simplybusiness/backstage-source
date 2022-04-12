@@ -1,5 +1,94 @@
 # @backstage/plugin-kubernetes-backend
 
+## 0.5.0-next.1
+
+### Minor Changes
+
+- 3d45427666: **BREAKING** Custom cluster suppliers need to cache their getClusters result
+
+  To allow custom `KubernetesClustersSupplier` instances to refresh the list of clusters
+  the `getClusters` method is now called whenever the list of clusters is needed.
+
+  Existing `KubernetesClustersSupplier` implementations will need to ensure that `getClusters`
+  can be called frequently and should return a cached result from `getClusters` instead.
+
+  For example, here's a simple example of a custom supplier in `packages/backend/src/plugins/kubernetes.ts`:
+
+  ```diff
+  -import { KubernetesBuilder } from '@backstage/plugin-kubernetes-backend';
+  +import {
+  +  ClusterDetails,
+  +  KubernetesBuilder,
+  +  KubernetesClustersSupplier,
+  +} from '@backstage/plugin-kubernetes-backend';
+   import { Router } from 'express';
+   import { PluginEnvironment } from '../types';
+  +import { Duration } from 'luxon';
+  +
+  +export class CustomClustersSupplier implements KubernetesClustersSupplier {
+  +  constructor(private clusterDetails: ClusterDetails[] = []) {}
+  +
+  +  static create(refreshInterval: Duration) {
+  +    const clusterSupplier = new CustomClustersSupplier();
+  +    // setup refresh, e.g. using a copy of https://github.com/backstage/backstage/blob/master/plugins/search-backend-node/src/runPeriodically.ts
+  +    runPeriodically(
+  +      () => clusterSupplier.refreshClusters(),
+  +      refreshInterval.toMillis(),
+  +    );
+  +    return clusterSupplier;
+  +  }
+  +
+  +  async refreshClusters(): Promise<void> {
+  +    this.clusterDetails = []; // fetch from somewhere
+  +  }
+  +
+  +  async getClusters(): Promise<ClusterDetails[]> {
+  +    return this.clusterDetails;
+  +  }
+  +}
+
+   export default async function createPlugin(
+     env: PluginEnvironment,
+   ): Promise<Router> {
+  -  const { router } = await KubernetesBuilder.createBuilder({
+  +  const builder = await KubernetesBuilder.createBuilder({
+       logger: env.logger,
+       config: env.config,
+  -  }).build();
+  +  });
+  +  builder.setClusterSupplier(
+  +    CustomClustersSupplier.create(Duration.fromObject({ minutes: 60 })),
+  +  );
+  +  const { router } = await builder.build();
+  ```
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-common@0.13.2-next.2
+
+## 0.4.14-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/catalog-model@1.0.1-next.0
+  - @backstage/backend-common@0.13.2-next.0
+  - @backstage/plugin-kubernetes-common@0.2.9-next.0
+
+## 0.4.13
+
+### Patch Changes
+
+- dab7f8dbd3: build(deps): bump `@google-cloud/container` from 2.3.0 to 3.0.0
+- f24ef7864e: Minor typo fixes
+- Updated dependencies
+  - @backstage/backend-common@0.13.1
+  - @backstage/catalog-model@1.0.0
+  - @backstage/config@1.0.0
+  - @backstage/errors@1.0.0
+  - @backstage/plugin-kubernetes-common@0.2.8
+
 ## 0.4.12
 
 ### Patch Changes

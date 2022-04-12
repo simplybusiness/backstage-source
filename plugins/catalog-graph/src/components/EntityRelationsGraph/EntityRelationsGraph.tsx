@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import {
   CompoundEntityRef,
   stringifyEntityRef,
@@ -28,7 +29,7 @@ import React, { MouseEvent, useEffect, useMemo } from 'react';
 import { CustomLabel } from './CustomLabel';
 import { CustomNode } from './CustomNode';
 import { ALL_RELATION_PAIRS, RelationPairs } from './relations';
-import { Direction, EntityNode } from './types';
+import { Direction, EntityEdge, EntityNode } from './types';
 import { useEntityRelationNodesAndEdges } from './useEntityRelationNodesAndEdges';
 
 const useStyles = makeStyles(theme => ({
@@ -67,19 +68,7 @@ const useStyles = makeStyles(theme => ({
  *
  * @public
  */
-export const EntityRelationsGraph = ({
-  rootEntityNames,
-  maxDepth = Number.POSITIVE_INFINITY,
-  unidirectional = true,
-  mergeRelations = true,
-  kinds,
-  relations,
-  direction = Direction.LEFT_RIGHT,
-  onNodeClick,
-  relationPairs = ALL_RELATION_PAIRS,
-  className,
-  zoom = 'enabled',
-}: {
+export const EntityRelationsGraph = (props: {
   rootEntityNames: CompoundEntityRef | CompoundEntityRef[];
   maxDepth?: number;
   unidirectional?: boolean;
@@ -91,7 +80,25 @@ export const EntityRelationsGraph = ({
   relationPairs?: RelationPairs;
   className?: string;
   zoom?: 'enabled' | 'disabled' | 'enable-on-click';
+  renderNode?: DependencyGraphTypes.RenderNodeFunction<EntityNode>;
+  renderLabel?: DependencyGraphTypes.RenderLabelFunction<EntityEdge>;
 }) => {
+  const {
+    rootEntityNames,
+    maxDepth = Number.POSITIVE_INFINITY,
+    unidirectional = true,
+    mergeRelations = true,
+    kinds,
+    relations,
+    direction = Direction.LEFT_RIGHT,
+    onNodeClick,
+    relationPairs = ALL_RELATION_PAIRS,
+    className,
+    zoom = 'enabled',
+    renderNode,
+    renderLabel,
+  } = props;
+
   const theme = useTheme();
   const classes = useStyles();
   const rootEntityRefs = useMemo(
@@ -127,8 +134,8 @@ export const EntityRelationsGraph = ({
         <DependencyGraph
           nodes={nodes}
           edges={edges}
-          renderNode={CustomNode}
-          renderLabel={CustomLabel}
+          renderNode={renderNode || CustomNode}
+          renderLabel={renderLabel || CustomLabel}
           direction={direction}
           className={classes.graph}
           paddingX={theme.spacing(4)}

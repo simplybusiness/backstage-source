@@ -21,29 +21,21 @@ jest.mock('jose', () => ({
 }));
 jest.mock('@backstage/catalog-client');
 
+import { AuthenticationError } from '@backstage/errors';
 import express from 'express';
 import { JWT } from 'jose';
 import { Logger } from 'winston';
-import {
-  AuthHandler,
-  SignInResolver,
-  AuthProviderFactoryOptions,
-} from '../types';
-
-import { CatalogIdentityClient } from '../../lib/catalog';
-import { TokenIssuer } from '../../identity/types';
-
+import { AuthHandler, AuthResolverContext, SignInResolver } from '../types';
 import {
   createOauth2ProxyProvider,
   Oauth2ProxyAuthProvider,
-  Oauth2ProxyProviderOptions,
   OAuth2ProxyResult,
   OAUTH2_PROXY_JWT_HEADER,
 } from './provider';
 
 describe('Oauth2ProxyAuthProvider', () => {
   const mockToken =
-    'eyblob.eyJzdWIiOiJqaW1teW1hcmt1bSIsImVudCI6WyJ1c2VyOmRlZmF1bHQvamltbXltYXJrdW0iXX0=.eyblob';
+    'eyblob.eyJzdWIiOiJ1c2VyOmRlZmF1bHQvamltbXltYXJrdW0iLCJlbnQiOlsidXNlcjpkZWZhdWx0L2ppbW15bWFya3VtIl19.eyblob';
 
   let provider: Oauth2ProxyAuthProvider<any>;
   let logger: jest.Mocked<Logger>;
@@ -76,10 +68,10 @@ describe('Oauth2ProxyAuthProvider', () => {
 
     provider = new Oauth2ProxyAuthProvider<any>({
       authHandler,
-      logger,
       signInResolver,
-      catalogIdentityClient: {} as CatalogIdentityClient,
-      tokenIssuer: {} as TokenIssuer,
+      resolverContext: {
+        _: 'resolver-context',
+      } as unknown as AuthResolverContext,
     });
   });
 
@@ -103,17 +95,17 @@ describe('Oauth2ProxyAuthProvider', () => {
     it('should throw an error when auth header is missing', async () => {
       mockRequest.header.mockReturnValue(undefined);
 
-      await provider.refresh(mockRequest, mockResponse);
-
-      expect(mockResponse.status).toHaveBeenCalledWith(401);
+      await expect(provider.refresh(mockRequest, mockResponse)).rejects.toThrow(
+        AuthenticationError,
+      );
     });
 
     it('should throw an error if the bearer token is invalid', async () => {
       mockRequest.header.mockReturnValue('Basic asdf=');
 
-      await provider.refresh(mockRequest, mockResponse);
-
-      expect(mockResponse.status).toHaveBeenCalledWith(401);
+      await expect(provider.refresh(mockRequest, mockResponse)).rejects.toThrow(
+        AuthenticationError,
+      );
     });
 
     it('should return if auth header is set and valid', async () => {
@@ -122,7 +114,6 @@ describe('Oauth2ProxyAuthProvider', () => {
         profile: {},
       });
       signInResolver.mockResolvedValue({
-        id: 'some-id',
         token: mockToken,
       });
 
@@ -142,7 +133,6 @@ describe('Oauth2ProxyAuthProvider', () => {
       const profile = { displayName: 'some value' };
       mockRequest.header.mockReturnValue(`Bearer token`);
       signInResolver.mockResolvedValue({
-        id: 'some-id',
         token: mockToken,
       });
       authHandler.mockResolvedValue({ profile: profile });
@@ -158,16 +148,14 @@ describe('Oauth2ProxyAuthProvider', () => {
             fullProfile: decodedToken,
           },
         },
-        { catalogIdentityClient: {}, logger, tokenIssuer: {} },
+        { _: 'resolver-context' },
       );
       expect(mockResponse.json).toHaveBeenCalledWith({
         backstageIdentity: {
-          id: 'some-id',
-          idToken: mockToken,
           identity: {
-            ownershipEntityRefs: ['user:default/jimmymarkum'],
             type: 'user',
             userEntityRef: 'user:default/jimmymarkum',
+            ownershipEntityRefs: ['user:default/jimmymarkum'],
           },
           token: mockToken,
         },
@@ -186,24 +174,20 @@ describe('Oauth2ProxyAuthProvider', () => {
         profile: {},
       });
       signInResolver.mockResolvedValue({
-        id: 'some-id',
         token: mockToken,
       });
     });
 
     it('should create a valid provider', async () => {
-      const providerOptions = {
+      const factory = createOauth2ProxyProvider({
         authHandler,
         signIn: { resolver: signInResolver },
-      } as Oauth2ProxyProviderOptions<any>;
-      const factoryOptions = {
+      });
+      const handler = factory({
         logger,
         catalogApi: {},
         tokenIssuer: {},
-      } as unknown as AuthProviderFactoryOptions;
-
-      const factory = createOauth2ProxyProvider(providerOptions);
-      const handler = factory(factoryOptions);
+      } as any);
       await handler.refresh!(mockRequest, mockResponse);
 
       expect(mockRequest.header).toBeCalledWith(OAUTH2_PROXY_JWT_HEADER);

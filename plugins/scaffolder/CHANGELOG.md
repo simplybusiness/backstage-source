@@ -1,5 +1,100 @@
 # @backstage/plugin-scaffolder
 
+## 1.1.0-next.3
+
+### Minor Changes
+
+- 6331ec1ebc: Added a context menu to the scaffolder page that provides links to the template editor and actions reference. These links and the presence of the context menu can be toggled through the `contextMenu` prop of the scaffolder page.
+- 8fad3b6ef5: The Template Preview page has been renamed to Template Editor, and is not available at the `/edit` path instead. There is a redirect in place from `/preview`.
+
+### Patch Changes
+
+- 24254fd433: build(deps): bump `@testing-library/user-event` from 13.5.0 to 14.0.0
+- 946af407db: Changed input label for owner field in GitlabRepoPicker
+- 230ad0826f: Bump to using `@types/node` v16
+- Updated dependencies
+  - @backstage/core-components@0.9.3-next.2
+  - @backstage/core-plugin-api@1.0.1-next.0
+  - @backstage/integration-react@1.0.1-next.2
+  - @backstage/plugin-catalog-react@1.0.1-next.3
+  - @backstage/plugin-permission-react@0.4.0-next.1
+  - @backstage/integration@1.1.0-next.2
+
+## 1.0.1-next.2
+
+### Patch Changes
+
+- 9975ff9852: Applied the fix from version 1.0.1 of this package, which is part of the v1.0.2 release of Backstage.
+- Updated dependencies
+  - @backstage/core-components@0.9.3-next.1
+  - @backstage/plugin-catalog-react@1.0.1-next.2
+  - @backstage/catalog-model@1.0.1-next.1
+
+## 1.0.1
+
+### Patch Changes
+
+- Pin the `event-source-polyfill` dependency to version 1.0.25
+
+## 1.0.1-next.1
+
+### Patch Changes
+
+- 4431873583: Update `usePermission` usage.
+- Updated dependencies
+  - @backstage/integration@1.1.0-next.1
+  - @backstage/plugin-permission-react@0.4.0-next.0
+  - @backstage/plugin-catalog-react@1.0.1-next.1
+  - @backstage/plugin-catalog-common@1.0.1-next.1
+  - @backstage/integration-react@1.0.1-next.1
+
+## 1.0.1-next.0
+
+### Patch Changes
+
+- d34900af81: Added a new `NextScaffolderRouter` which will eventually replace the exiting router
+- Updated dependencies
+  - @backstage/catalog-model@1.0.1-next.0
+  - @backstage/integration@1.0.1-next.0
+  - @backstage/plugin-catalog-react@1.0.1-next.0
+  - @backstage/core-components@0.9.3-next.0
+  - @backstage/catalog-client@1.0.1-next.0
+  - @backstage/plugin-scaffolder-common@1.0.1-next.0
+  - @backstage/integration-react@1.0.1-next.0
+  - @backstage/plugin-catalog-common@1.0.1-next.0
+
+## 1.0.0
+
+### Major Changes
+
+- b58c70c223: This package has been promoted to v1.0! To understand how this change affects the package, please check out our [versioning policy](https://backstage.io/docs/overview/versioning-policy).
+
+### Minor Changes
+
+- 9a408928a1: **BREAKING**: Removed the unused `titleComponent` property of `groups` passed to the `ScaffolderPage`. The property was already ignored, but existing usage should migrated to use the `title` property instead, which now accepts any `ReactNode`.
+
+### Patch Changes
+
+- 9b7e361783: Remove beta labels
+- a422d7ce5e: chore(deps): bump `@testing-library/react` from 11.2.6 to 12.1.3
+- 20a262c214: The `ScaffolderPage` now uses the `CatalogFilterLayout`, which means the filters are put in a drawer on smaller screens.
+- f24ef7864e: Minor typo fixes
+- d8716924d6: Implement a template preview page (`/create/preview`) to test creating form UIs
+- Updated dependencies
+  - @backstage/core-components@0.9.2
+  - @backstage/core-plugin-api@1.0.0
+  - @backstage/integration-react@1.0.0
+  - @backstage/plugin-catalog-react@1.0.0
+  - @backstage/plugin-permission-react@0.3.4
+  - @backstage/catalog-model@1.0.0
+  - @backstage/plugin-scaffolder-common@1.0.0
+  - @backstage/integration@1.0.0
+  - @backstage/catalog-client@1.0.0
+  - @backstage/config@1.0.0
+  - @backstage/errors@1.0.0
+  - @backstage/types@1.0.0
+  - @backstage/plugin-catalog-common@1.0.0
+
 ## 0.15.0
 
 ### Minor Changes
