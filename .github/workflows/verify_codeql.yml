@@ -16,6 +16,7 @@ on:
       - '**/*.md'
       - '**/*.yml'
       - '**/*.yaml'
+      - '**/*.test.ts'
   schedule:
     - cron: '0 8 * * 6'
 
