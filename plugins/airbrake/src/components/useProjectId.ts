@@ -21,3 +21,7 @@ export const AIRBRAKE_PROJECT_ID_ANNOTATION = 'airbrake.io/project-id';
 export const useProjectId = (entity: Entity) => {
   return entity?.metadata.annotations?.[AIRBRAKE_PROJECT_ID_ANNOTATION] ?? '';
 };
+
+export const isAirbrakeAvailable = (entity: Entity) => {
+  Boolean(entity.metadata.annotations?.[AIRBRAKE_PROJECT_ID_ANNOTATION]);
+};

@@ -30,6 +30,7 @@ import {
   isGithubActionsAvailable,
   EntityGithubActionsContent,
 } from '@backstage/plugin-github-actions';
+import {EntityAirbrakeContent, isAirbrakeAvailable} from "@backstage/plugin-airbrake"
 import {
   EntityUserProfileCard,
   EntityGroupProfileCard,
@@ -136,6 +137,10 @@ const serviceEntityPage = (
       {overviewContent}
     </EntityLayout.Route>
 
+    <EntityLayout.Route path="/airbrake" title="Airbrake">
+      <EntityAirbrakeContent />
+    </EntityLayout.Route>
+
     <EntityLayout.Route path="/ci-cd" title="CI/CD">
       {cicdContent}
     </EntityLayout.Route>
@@ -172,6 +177,10 @@ const websiteEntityPage = (
   <EntityLayout>
     <EntityLayout.Route path="/" title="Overview">
       {overviewContent}
+    </EntityLayout.Route>
+
+    <EntityLayout.Route if={isAirbrakeAvailable(entity)} path="/airbrake" title="Airbrake">
+      <EntityAirbrakeContent />
     </EntityLayout.Route>
 
     <EntityLayout.Route path="/ci-cd" title="CI/CD">
