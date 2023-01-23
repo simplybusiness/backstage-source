@@ -22,6 +22,5 @@ export const useProjectId = (entity: Entity) => {
   return entity?.metadata.annotations?.[AIRBRAKE_PROJECT_ID_ANNOTATION] ?? '';
 };
 
-export const isAirbrakeAvailable = (entity: Entity) => {
+export const isAirbrakeAvailable = (entity: Entity) =>
   Boolean(entity.metadata.annotations?.[AIRBRAKE_PROJECT_ID_ANNOTATION]);
-};
